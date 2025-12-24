@@ -23,17 +23,26 @@ func _ready():
 	# Find plunger visual node
 	plunger_node = get_node_or_null("Plunger")
 	if not plunger_node:
-		# Create a simple visual plunger if not found
+		# Create a simple visual plunger if not found (fallback)
 		plunger_node = Node2D.new()
 		plunger_node.name = "Plunger"
 		add_child(plunger_node)
-		# Add a simple visual representation
-		var visual = ColorRect.new()
-		visual.offset_left = -5.0
-		visual.offset_top = -20.0
-		visual.offset_right = 5.0
-		visual.offset_bottom = 0.0
-		visual.color = Color(0.8, 0.2, 0.2, 1)
+		# Add a simple visual representation (Sprite2D with fallback)
+		var visual = Sprite2D.new()
+		var texture = load("res://assets/sprites/plunger.png")
+		if texture:
+			visual.texture = texture
+		else:
+			# Fallback to ColorRect if sprite not found
+			var color_rect = ColorRect.new()
+			color_rect.offset_left = -5.0
+			color_rect.offset_top = -20.0
+			color_rect.offset_right = 5.0
+			color_rect.offset_bottom = 0.0
+			color_rect.color = Color(0.8, 0.2, 0.2, 1)
+			plunger_node.add_child(color_rect)
+			return
+		visual.offset = Vector2(0, -15)
 		plunger_node.add_child(visual)
 	
 	# Find or create charge meter
@@ -52,11 +61,18 @@ func _process(delta):
 	# Handle input for charging
 	var charge_input = Input.is_action_pressed("launch_ball") or Input.is_action_pressed("ui_down")
 	
-	if charge_input and current_ball and current_ball.sleeping:
+	# Check if we have a valid ball
+	var has_valid_ball = current_ball != null and is_instance_valid(current_ball)
+	
+	if charge_input and has_valid_ball:
 		# Start or continue charging
 		if not is_charging:
 			is_charging = true
 			current_charge = 0.0
+			# Position ball at launcher if not already there
+			if current_ball:
+				current_ball.global_position = launcher_position
+				current_ball.reset_ball()
 		
 		# Increase charge
 		current_charge = min(current_charge + charge_rate * delta, max_charge)
@@ -66,7 +82,7 @@ func _process(delta):
 		update_charge_meter()
 	else:
 		# Release and launch if we were charging
-		if is_charging and current_ball:
+		if is_charging and has_valid_ball:
 			launch_ball()
 		is_charging = false
 		current_charge = 0.0
@@ -115,3 +131,5 @@ func launch_ball():
 func has_ball() -> bool:
 	"""Check if launcher has a ball ready"""
 	return current_ball != null and is_instance_valid(current_ball)
+
+

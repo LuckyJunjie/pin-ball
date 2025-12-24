@@ -5,9 +5,15 @@ extends StaticBody2D
 
 signal obstacle_hit(points: int)
 
-@export var obstacle_type: String = "bumper"  # "bumper", "peg", "wall"
+@export var obstacle_type: String = "bumper" : set = set_obstacle_type  # "bumper", "peg", "wall"
 @export var points_value: int = 10
 @export var bounce_strength: float = 0.9
+
+func set_obstacle_type(value: String):
+	"""Setter for obstacle_type that updates sprite when changed"""
+	obstacle_type = value
+	if is_inside_tree():
+		update_sprite()
 
 var hit_cooldown: float = 0.0
 var cooldown_time: float = 0.5  # Prevent multiple hits in quick succession
@@ -18,13 +24,16 @@ func _ready():
 	
 	# Set collision layer for obstacles (layer 8)
 	collision_layer = 8
-	collision_mask = 1  # Collide with ball
+	collision_mask = 0  # Static body doesn't need collision mask (Area2D handles detection)
 	
 	# Configure physics material based on type
 	var physics_material = PhysicsMaterial.new()
 	physics_material.bounce = bounce_strength
 	physics_material.friction = 0.2
 	physics_material_override = physics_material
+	
+	# Load sprite - will be called again if obstacle_type changes
+	update_sprite()
 	
 	# Add Area2D for collision detection
 	var area = Area2D.new()
@@ -41,6 +50,27 @@ func _ready():
 		area.add_child(area_shape)
 		area.body_entered.connect(_on_body_entered)
 
+func update_sprite():
+	"""Update sprite based on obstacle type"""
+	var visual_node = get_node_or_null("Visual")
+	if visual_node and visual_node is Sprite2D:
+		var sprite_path = ""
+		
+		match obstacle_type:
+			"bumper":
+				sprite_path = "res://assets/sprites/bumper.png"
+			"peg":
+				sprite_path = "res://assets/sprites/peg.png"
+			"wall":
+				sprite_path = "res://assets/sprites/wall_obstacle.png"
+		
+		if sprite_path != "":
+			var texture = load(sprite_path)
+			if texture:
+				visual_node.texture = texture
+				# Initial scale is 1,1 - ObstacleSpawner will adjust if needed
+				visual_node.scale = Vector2(1, 1)
+
 func _process(delta):
 	if hit_cooldown > 0.0:
 		hit_cooldown -= delta
@@ -54,3 +84,5 @@ func _on_body_entered(body: Node2D):
 		hit_cooldown = cooldown_time
 		obstacle_hit.emit(points_value)
 		# Visual feedback could be added here (flash, animation, etc.)
+
+

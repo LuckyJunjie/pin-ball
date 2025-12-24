@@ -50,7 +50,7 @@ func _input(event):
 		toggle_pause()
 
 func prepare_next_ball():
-	"""Prepare the next ball from queue for launching"""
+	"""Prepare the next ball from queue - ball drops from queue position on right side"""
 	if not ball_queue:
 		# Fallback to old system
 		spawn_ball()
@@ -64,20 +64,31 @@ func prepare_next_ball():
 	var ball = ball_queue.get_next_ball()
 	if ball:
 		current_ball = ball
-		# Set ball in launcher
-		if launcher:
+		# Position ball at queue location (right side) - it will fall naturally
+		ball.global_position = ball_queue.queue_position
+		ball.initial_position = ball_queue.queue_position
+		# Reset ball state to ensure clean drop
+		ball.reset_ball()
+		# Connect ball lost signal
+		ball.ball_lost.connect(_on_ball_lost)
+		# Pass ball to launcher if launcher exists
+		if launcher and launcher.has_method("set_ball"):
 			launcher.set_ball(ball)
-			# Connect ball lost signal
-			ball.ball_lost.connect(_on_ball_lost)
 	else:
 		_on_queue_empty()
 
 func _on_ball_ready(ball: RigidBody2D):
 	"""Called when a ball is ready from the queue"""
 	current_ball = ball
-	if launcher:
-		launcher.set_ball(ball)
+	# Position ball at queue location - it will fall naturally
+	if ball_queue:
+		ball.global_position = ball_queue.queue_position
+		ball.initial_position = ball_queue.queue_position
+		ball.reset_ball()
 	ball.ball_lost.connect(_on_ball_lost)
+	# Pass ball to launcher if launcher exists
+	if launcher and launcher.has_method("set_ball"):
+		launcher.set_ball(ball)
 
 func _on_ball_launched(_force: Vector2):
 	"""Called when ball is launched from launcher"""

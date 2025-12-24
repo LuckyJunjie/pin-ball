@@ -57,19 +57,19 @@ func spawn_obstacles():
 						obstacle.obstacle_type = "bumper"
 						obstacle.points_value = 20
 						obstacle.bounce_strength = 0.95
-						# Make bumper larger
-						scale_obstacle(obstacle, 1.5)
+						# Set bumper to exact radius 30px
+						set_obstacle_size(obstacle, 30.0, true)
 					1:
 						obstacle.obstacle_type = "peg"
 						obstacle.points_value = 5
 						obstacle.bounce_strength = 0.8
-						# Make peg smaller
-						scale_obstacle(obstacle, 0.6)
+						# Set peg to exact radius 8px
+						set_obstacle_size(obstacle, 8.0, true)
 					2:
 						obstacle.obstacle_type = "wall"
 						obstacle.points_value = 15
 						obstacle.bounce_strength = 0.85
-						# Make wall rectangular
+						# Make wall rectangular 40x10px
 						make_wall_shape(obstacle)
 			
 			spawned_obstacles.append(obstacle)
@@ -98,8 +98,33 @@ func is_valid_position(pos: Vector2) -> bool:
 	
 	return true
 
+func set_obstacle_size(obstacle: Node2D, radius: float, is_circle: bool):
+	"""Set obstacle to exact size (for bumpers and pegs)"""
+	if is_circle:
+		# Set collision shape radius
+		for child in obstacle.get_children():
+			if child is CollisionShape2D:
+				var shape = child.shape
+				if shape is CircleShape2D:
+					shape.radius = radius
+				break
+		# Set visual size for Sprite2D
+		var visual = obstacle.get_node_or_null("Visual")
+		if visual and visual is Sprite2D:
+			# Scale sprite to match collision radius
+			# Sprite sizes: bumper=60x60 (radius 30), peg=16x16 (radius 8)
+			var sprite_size = 0.0
+			if obstacle.obstacle_type == "bumper":
+				sprite_size = 60.0  # Bumper sprite is 60x60
+			elif obstacle.obstacle_type == "peg":
+				sprite_size = 16.0  # Peg sprite is 16x16
+			
+			if sprite_size > 0:
+				var scale_factor = (radius * 2) / sprite_size
+				visual.scale = Vector2(scale_factor, scale_factor)
+
 func scale_obstacle(obstacle: Node2D, scale_factor: float):
-	"""Scale an obstacle visually and collision-wise"""
+	"""Scale an obstacle visually and collision-wise (deprecated - use set_obstacle_size)"""
 	obstacle.scale *= scale_factor
 	# Also scale collision shapes
 	for child in obstacle.get_children():
@@ -111,11 +136,19 @@ func scale_obstacle(obstacle: Node2D, scale_factor: float):
 				shape.size *= scale_factor
 
 func make_wall_shape(obstacle: Node2D):
-	"""Convert obstacle to wall shape (rectangular)"""
+	"""Convert obstacle to wall shape (rectangular 40x10px)"""
 	for child in obstacle.get_children():
 		if child is CollisionShape2D:
 			var rect_shape = RectangleShape2D.new()
-			rect_shape.size = Vector2(40, 15)
+			rect_shape.size = Vector2(40, 10)  # Exact size per requirements
 			child.shape = rect_shape
 			# Random rotation for variety
 			obstacle.rotation_degrees = randf_range(-45, 45)
+			break
+	# Update visual to match (wall obstacle is 40x10, sprite is 40x10)
+	var visual = obstacle.get_node_or_null("Visual")
+	if visual and visual is Sprite2D:
+		# Wall sprite is already 40x10, so scale is 1:1
+		visual.scale = Vector2(1, 1)
+
+

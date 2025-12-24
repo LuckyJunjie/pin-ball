@@ -9,7 +9,7 @@ signal queue_empty
 @export var ball_scene: PackedScene = null
 @export var queue_size: int = 4
 @export var queue_spacing: float = 25.0
-@export var queue_position: Vector2 = Vector2(50, 300)
+@export var queue_position: Vector2 = Vector2(750, 300)
 @export var queue_direction: Vector2 = Vector2(0, -1)  # Vertical stack (upward)
 
 var ball_queue: Array[RigidBody2D] = []
@@ -41,8 +41,8 @@ func initialize_queue():
 		ball.sleeping = true
 		ball.freeze = true
 		
-		# Make queued balls slightly transparent
-		ball.modulate = Color(1, 1, 1, 0.6)
+		# Make queued balls slightly transparent (but visible)
+		ball.modulate = Color(1, 1, 1, 0.8)
 		
 		ball_queue.append(ball)
 
@@ -76,7 +76,7 @@ func return_ball_to_queue(ball: RigidBody2D):
 	ball.angular_velocity = 0.0
 	ball.sleeping = true
 	ball.freeze = true
-	ball.modulate = Color(1, 1, 1, 0.6)
+	ball.modulate = Color(1, 1, 1, 0.8)
 	
 	# Add to back of queue
 	ball_queue.append(ball)

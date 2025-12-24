@@ -126,3 +126,5 @@ if [ "$GIT_AVAILABLE" = true ]; then
     echo -e "2. Push git tag: git push origin v${NEW_VERSION}"
 fi
 echo -e "3. Update CHANGELOG.md and VERSIONS.md with new features"
+
+

@@ -69,3 +69,5 @@ echo -e "4. Save to: ${RELEASE_DIR}/"
 echo ""
 echo -e "${GREEN}Build script complete.${NC}"
 echo -e "Binaries directory: ${RELEASE_DIR}/"
+
+

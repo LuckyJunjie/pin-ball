@@ -7,7 +7,6 @@ extends RigidBody2D
 @export var rest_angle: float = 0.0
 @export var pressed_angle: float = -45.0  # Negative for left, positive for right
 @export var rotation_speed: float = 20.0
-@export var torque_strength: float = 3000.0
 
 var is_pressed: bool = false
 var target_angle: float = 0.0
@@ -17,6 +16,7 @@ func _ready():
 	gravity_scale = 0.0
 	lock_rotation = false
 	freeze_mode = RigidBody2D.FREEZE_MODE_KINEMATIC
+	freeze = true  # Freeze the body, we'll control rotation manually
 	collision_layer = 2  # Flipper layer
 	collision_mask = 1  # Collide with ball
 	mass = 1.0
@@ -45,24 +45,17 @@ func _physics_process(delta):
 	else:
 		input_pressed = Input.is_action_pressed("flipper_right")
 	
-	# Update target angle
+	# Update target angle based on input
 	if input_pressed:
 		target_angle = pressed_angle
 		is_pressed = true
-		# Apply torque for more realistic physics
-		apply_torque(torque_strength if flipper_side == "right" else -torque_strength)
 	else:
 		target_angle = rest_angle
 		is_pressed = false
-		# Apply reverse torque when releasing
-		apply_torque(-torque_strength * 0.5 if flipper_side == "right" else torque_strength * 0.5)
 	
-	# Smoothly rotate towards target angle
+	# Smoothly rotate towards target angle (only rotate when needed)
 	var angle_diff = target_angle - rotation_degrees
-	if abs(angle_diff) > 0.5:
+	if abs(angle_diff) > 0.1:
 		var rotation_dir = sign(angle_diff)
-		var rotation_amount = min(abs(angle_diff), rotation_speed)
+		var rotation_amount = min(abs(angle_diff), rotation_speed * delta * 60.0)
 		rotation_degrees += rotation_dir * rotation_amount
-	else:
-		# Dampen rotation when close to target
-		angular_velocity *= 0.9
