@@ -42,14 +42,22 @@ func _physics_process(delta):
 	var input_pressed = false
 	if flipper_side == "left":
 		input_pressed = Input.is_action_pressed("flipper_left")
+		if input_pressed and not is_pressed:
+			print("[Flipper] Left flipper pressed")
 	else:
 		input_pressed = Input.is_action_pressed("flipper_right")
+		if input_pressed and not is_pressed:
+			print("[Flipper] Right flipper pressed")
 	
 	# Update target angle based on input
 	if input_pressed:
 		target_angle = pressed_angle
+		if not is_pressed:
+			print("[Flipper] ", flipper_side, " flipper activating - target angle: ", target_angle)
 		is_pressed = true
 	else:
+		if is_pressed:
+			print("[Flipper] ", flipper_side, " flipper released - returning to rest")
 		target_angle = rest_angle
 		is_pressed = false
 	

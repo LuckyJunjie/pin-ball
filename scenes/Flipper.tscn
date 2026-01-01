@@ -22,3 +22,10 @@ shape = SubResource("RectangleShape2D_flipper")
 texture = ExtResource("2_flipper_texture")
 offset = Vector2(0, 0)
 
+[node name="ColorRectFallback" type="ColorRect" parent="."]
+offset_left = -30.0
+offset_top = -6.0
+offset_right = 30.0
+offset_bottom = 6.0
+color = Color(0.2, 0.6, 1, 1)
+

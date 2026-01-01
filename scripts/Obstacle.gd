@@ -49,9 +49,12 @@ func _ready():
 		area_shape.shape = collision_shape.shape.duplicate()
 		area.add_child(area_shape)
 		area.body_entered.connect(_on_body_entered)
+	
+	# Add visual label
+	add_visual_label("OBSTACLE\n" + obstacle_type.to_upper())
 
 func update_sprite():
-	"""Update sprite based on obstacle type"""
+	"""Update sprite based on obstacle type and add ColorRect fallback"""
 	var visual_node = get_node_or_null("Visual")
 	if visual_node and visual_node is Sprite2D:
 		var sprite_path = ""
@@ -70,6 +73,34 @@ func update_sprite():
 				visual_node.texture = texture
 				# Initial scale is 1,1 - ObstacleSpawner will adjust if needed
 				visual_node.scale = Vector2(1, 1)
+	
+	# Add or update ColorRect fallback
+	var fallback_node = get_node_or_null("ColorRectFallback")
+	if not fallback_node:
+		fallback_node = ColorRect.new()
+		fallback_node.name = "ColorRectFallback"
+		add_child(fallback_node)
+	
+	# Set color and size based on obstacle type
+	match obstacle_type:
+		"bumper":
+			fallback_node.color = Color(1, 1, 0.2, 1)  # Yellow
+			fallback_node.offset_left = -30.0
+			fallback_node.offset_top = -30.0
+			fallback_node.offset_right = 30.0
+			fallback_node.offset_bottom = 30.0
+		"peg":
+			fallback_node.color = Color(1, 1, 1, 1)  # White
+			fallback_node.offset_left = -8.0
+			fallback_node.offset_top = -8.0
+			fallback_node.offset_right = 8.0
+			fallback_node.offset_bottom = 8.0
+		"wall":
+			fallback_node.color = Color(0.5, 0.5, 0.5, 1)  # Gray
+			fallback_node.offset_left = -20.0
+			fallback_node.offset_top = -5.0
+			fallback_node.offset_right = 20.0
+			fallback_node.offset_bottom = 5.0
 
 func _process(delta):
 	if hit_cooldown > 0.0:
@@ -85,4 +116,16 @@ func _on_body_entered(body: Node2D):
 		obstacle_hit.emit(points_value)
 		# Visual feedback could be added here (flash, animation, etc.)
 
-
+func add_visual_label(text: String):
+	"""Add a visual label to identify this object"""
+	var label = Label.new()
+	label.name = "VisualLabel"
+	label.text = text
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	label.add_theme_constant_override("outline_size", 2)
+	label.position = Vector2(-40, -40)  # Offset from center
+	add_child(label)
