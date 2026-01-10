@@ -6,7 +6,7 @@
 script = ExtResource("1_ball_queue_script")
 queue_size = 4
 queue_spacing = 25.0
-queue_position = Vector2(750, 300)
+queue_position = Vector2(720, 100)
 queue_direction = Vector2(0, -1)
 
 

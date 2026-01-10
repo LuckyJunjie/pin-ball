@@ -18,6 +18,15 @@ func set_obstacle_type(value: String):
 var hit_cooldown: float = 0.0
 var cooldown_time: float = 0.5  # Prevent multiple hits in quick succession
 
+func _get_debug_mode() -> bool:
+	"""Helper to get debug mode from GameManager"""
+	var game_manager = get_tree().get_first_node_in_group("game_manager")
+	if game_manager:
+		var debug = game_manager.get("debug_mode")
+		if debug != null:
+			return bool(debug)
+	return false
+
 func _ready():
 	# Add to obstacles group
 	add_to_group("obstacles")
@@ -50,8 +59,9 @@ func _ready():
 		area.add_child(area_shape)
 		area.body_entered.connect(_on_body_entered)
 	
-	# Add visual label
-	add_visual_label("OBSTACLE\n" + obstacle_type.to_upper())
+	# Add visual label if debug mode enabled
+	if _get_debug_mode():
+		add_visual_label("OBSTACLE\n" + obstacle_type.to_upper())
 
 func update_sprite():
 	"""Update sprite based on obstacle type and add ColorRect fallback"""
@@ -118,6 +128,8 @@ func _on_body_entered(body: Node2D):
 
 func add_visual_label(text: String):
 	"""Add a visual label to identify this object"""
+	if not _get_debug_mode():
+		return
 	var label = Label.new()
 	label.name = "VisualLabel"
 	label.text = text

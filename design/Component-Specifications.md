@@ -127,11 +127,13 @@ BallQueue (Node2D)
 **Methods**:
 - `_ready()`: Initialize queue
 - `initialize_queue()`: Create and position 4 standby balls
-- `get_next_ball() -> RigidBody2D`: Activate next ball from queue
+- `get_next_ball() -> RigidBody2D`: Activate next ball from queue (internal)
+- `release_next_ball() -> RigidBody2D`: Release ball from queue (called by GameManager on Down Arrow)
 - `return_ball_to_queue(ball: RigidBody2D)`: Return ball to queue
 - `update_queue_positions()`: Reposition remaining balls
 - `has_balls() -> bool`: Check if queue has balls
 - `get_queue_count() -> int`: Get number of balls in queue
+- `add_visual_label(text: String)`: Add debug label if debug mode enabled
 
 **Signals**:
 - `ball_ready(ball: RigidBody2D)`: Emitted when ball is activated
@@ -151,6 +153,7 @@ BallQueue (Node2D)
 - `ball_scene: PackedScene` - Ball scene reference
 - `ball_spawn_position: Vector2 = Vector2(400, 600)` - Fallback spawn position
 - `launch_force: Vector2 = Vector2(0, -500)` - Fallback launch force
+- `debug_mode: bool = false` - Enable/disable debug mode (logging and visual labels)
 
 **Properties**:
 - `current_ball: RigidBody2D = null` - Currently active ball
@@ -161,19 +164,23 @@ BallQueue (Node2D)
 
 **Methods**:
 - `_ready()`: Initialize and connect signals
-- `_input(event)`: Handle pause input
-- `prepare_next_ball()`: Get ball from queue and position it
+- `_input(event)`: Handle pause input and ball release (Down Arrow)
+- `prepare_next_ball()`: Get ball from queue and position it (legacy, for auto-release)
+- `release_ball_from_queue()`: Handle Down Arrow input to release ball from queue
 - `_on_ball_ready(ball)`: Handle ball ready from queue
-- `_on_ball_launched(force)`: Handle ball launch (optional)
-- `_on_ball_lost()`: Handle ball loss and prepare next
+- `_on_ball_launched(force)`: Handle ball launch
+- `_on_ball_lost()`: Handle ball loss, wait for next release
+- `_on_hold_entered(points)`: Handle hold entry and final scoring
 - `_on_queue_empty()`: Handle empty queue (refill)
 - `connect_obstacle_signals()`: Connect obstacle hit signals
+- `connect_hold_signals()`: Connect hold entry signals
 - `_on_obstacle_hit(points)`: Handle obstacle hit and score
 - `spawn_ball()`: Fallback ball spawning
 - `launch_ball()`: Fallback ball launching
 - `add_score(points)`: Increment score
 - `reset_score()`: Reset score to zero
 - `toggle_pause()`: Toggle pause state
+- `debug_log(message)`: Helper for debug logging (optional)
 
 **Signals**:
 - `score_changed(new_score: int)`: Emitted when score changes
@@ -315,7 +322,7 @@ Launcher (Node2D)
 - `base_launch_force: Vector2 = Vector2(0, -500)`
 - `max_launch_force: Vector2 = Vector2(0, -1000)`
 - `charge_rate: float = 2.0`
-- `launcher_position: Vector2 = Vector2(400, 570)`
+- `launcher_position: Vector2 = Vector2(400, 200)` - Positioned below queue
 - `plunger_rest_position: Vector2 = Vector2(0, 0)`
 - `plunger_max_pull: Vector2 = Vector2(0, 30)`
 
@@ -326,12 +333,18 @@ Launcher (Node2D)
 - `current_ball: RigidBody2D = null`
 
 **Methods**:
-- `_ready()`: Initialize visual elements
-- `_process(delta)`: Handle charging input
-- `set_ball(ball: RigidBody2D)`: Set ball to launch
-- `update_plunger_visual()`: Update plunger position
+- `_ready()`: Initialize visual elements and ramp
+- `_process(delta)`: Handle charging input (Space key)
+- `set_ball(ball: RigidBody2D)`: Set ball to launch (position ball at launcher)
+- `update_plunger_visual()`: Update plunger position based on charge
 - `update_charge_meter()`: Update charge display
 - `launch_ball()`: Launch ball with current charge
+- `has_ball() -> bool`: Check if launcher has a ball ready
+- `add_visual_label(text: String)`: Add debug label if debug mode enabled
+
+**Launcher Ramp**:
+- Launcher has attached ramp component to guide ball to playfield
+- Ramp angle and length configured for proper ball trajectory
 
 **Signals**:
 - `ball_launched(force: Vector2)`: Emitted when ball is launched
@@ -377,12 +390,14 @@ Walls (Node2D)
 - Collision detection via physics layers
 - Ball bounces off flipper with 0.6 bounce coefficient
 - Flipper rotation affects ball trajectory
+- Sound effect plays when flipper activates (if implemented)
 
 ### 10.2 Ball ↔ Obstacle
 - Collision detection via Area2D
-- Points awarded on collision
+- Points awarded on collision (continuous scoring)
 - Cooldown prevents multiple rapid hits
 - Bounce coefficient varies by obstacle type
+- Sound effect plays on hit (if implemented)
 
 ### 10.3 Ball ↔ Wall
 - Collision detection via physics layers
@@ -391,12 +406,144 @@ Walls (Node2D)
 
 ### 10.4 GameManager ↔ All Components
 - Coordinates ball lifecycle
-- Manages score from obstacles
+- Manages score from obstacles and holds
 - Connects signals between components
 - Handles game state
+- Manages debug mode configuration
 
-### 10.5 BallQueue ↔ GameManager
-- GameManager requests next ball
+### 10.5 Hold Component
+
+**Scene: Hold.tscn**
+
+**Node Structure**:
+```
+Hold (Area2D)
+├── CollisionShape2D
+│   └── Shape: CircleShape2D or RectangleShape2D
+├── Visual (ColorRect/Sprite2D)
+└── Label (Label) - Point value display
+```
+
+**Script: Hold.gd**
+
+**Class**: `extends Area2D`
+
+**Export Variables**:
+- `points_value: int = 10` - Point value for this hold (10, 15, 20, 25, 30, etc.)
+
+**Properties**:
+- `collision_layer = 0` (no collision layer)
+- Area2D `collision_mask = 1` (detect ball)
+
+**Methods**:
+- `_ready()`: Setup Area2D and connect body_entered signal
+- `_on_body_entered(body)`: Handle ball entry, award points, emit signal
+- `add_visual_label(text: String)`: Add debug label if debug mode enabled
+
+**Signals**:
+- `hold_entered(points: int)`: Emitted when ball enters hold
+
+### 10.6 Ramp Component
+
+**Scene: Ramp.tscn**
+
+**Node Structure**:
+```
+Ramp (StaticBody2D)
+├── CollisionShape2D
+│   └── Shape: SegmentShape2D or RectangleShape2D
+└── Visual (ColorRect/Sprite2D)
+```
+
+**Script: Ramp.gd**
+
+**Class**: `extends StaticBody2D`
+
+**Export Variables**:
+- `ramp_length: float = 200.0` - Length of ramp
+- `ramp_angle: float = 30.0` - Angle in degrees
+- `ramp_width: float = 40.0` - Width of ramp
+
+**Properties**:
+- `collision_layer = 4` (Walls layer)
+- `collision_mask = 0` (static)
+
+**Methods**:
+- `_ready()`: Setup collision shape and visual
+- `add_visual_label(text: String)`: Add debug label if debug mode enabled
+
+### 10.7 SoundManager Component (Optional)
+
+**Scene: SoundManager.tscn (optional, or AudioStreamPlayer nodes in components)**
+
+**Node Structure**:
+```
+SoundManager (Node) - Optional singleton
+├── FlipperClickSound (AudioStreamPlayer)
+├── ObstacleHitSound (AudioStreamPlayer)
+├── BallLaunchSound (AudioStreamPlayer)
+├── HoldEntrySound (AudioStreamPlayer)
+└── BallLostSound (AudioStreamPlayer)
+```
+
+**Script: SoundManager.gd**
+
+**Class**: `extends Node`
+
+**Export Variables**:
+- `volume: float = 1.0` - Master volume
+- `enabled: bool = true` - Enable/disable sounds
+
+**Methods**:
+- `play_sound(sound_name: String)`: Play sound effect by name
+- `set_volume(volume: float)`: Set master volume
+- `set_enabled(enabled: bool)`: Enable/disable all sounds
+
+**Alternative Implementation**: AudioStreamPlayer nodes added directly to Flipper, Obstacle, Launcher, Hold, and Ball components
+
+### 10.8 Debug System
+
+**Debug Configuration**:
+- GameManager has `@export var debug_mode: bool = false`
+- All components access debug mode via GameManager.debug_mode
+
+**Debug Logging**:
+- Components wrap debug prints: `if GameManager.debug_mode: print("[Component] Message")`
+- Helper function (optional): `debug_log(message)` in GameManager
+
+**Visual Debug Labels**:
+- All components have `add_visual_label(text: String)` method
+- Labels created conditionally: `if GameManager.debug_mode: add_visual_label("TEXT")`
+- Consistent styling: font size 12-20, white/yellow color, black outline
+
+### 10.9 Component Interactions (Updated)
+
+### 10.10 Ball ↔ Flipper
+- Collision detection via physics layers
+- Ball bounces off flipper with 0.6 bounce coefficient
+- Flipper rotation affects ball trajectory
+- Sound effect plays when flipper activates (if implemented)
+
+### 10.11 Ball ↔ Obstacle
+- Collision detection via Area2D
+- Points awarded on collision (continuous scoring)
+- Cooldown prevents multiple rapid hits
+- Bounce coefficient varies by obstacle type
+- Sound effect plays on hit (if implemented)
+
+### 10.12 Ball ↔ Hold
+- Entry detection via Area2D body_entered signal
+- Points awarded (final scoring for ball)
+- Ball removed after entry
+- Sound effect plays on entry (if implemented)
+
+### 10.13 Ball ↔ Ramp/Rail
+- Collision detection via StaticBody2D
+- Ball trajectory adjusted by ramp angle
+- Ramps guide ball toward center and bottom area
+
+### 10.14 BallQueue ↔ GameManager
+- GameManager calls release_next_ball() when Down Arrow pressed
 - BallQueue activates and provides ball
 - GameManager handles ball loss
 - BallQueue refills when empty

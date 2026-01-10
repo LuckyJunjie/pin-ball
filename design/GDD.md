@@ -35,13 +35,17 @@ To create an engaging, physics-based pinball experience that captures the excite
 
 ### 1.5 Core Gameplay Loop
 
-1. Ball drops from queue on the right side of the playfield
-2. Ball falls naturally with gravity into the play area
-3. Player uses flippers to keep the ball in play
-4. Ball hits obstacles and awards points
-5. Player attempts to keep the ball alive as long as possible
-6. When ball is lost, next ball automatically activates from queue
-7. Repeat until all balls are used (queue refills automatically)
+1. Game starts with balls in queue (positioned at top area)
+2. Player presses Down Arrow to release ball from queue
+3. Ball falls to launcher (positioned below queue)
+4. Player charges launcher (Space key) and releases to launch ball
+5. Ball travels through launcher ramp to playfield
+6. Ball interacts with obstacles (scores points on hit)
+7. Ball interacts with holds (scores final points, ends ball life)
+8. Ball travels through ramps and rails to bottom area
+9. Player uses flippers to hit ball back into playfield
+10. When ball enters hold or falls to bottom, next ball can be released
+11. Repeat until all balls are used (queue refills automatically)
 
 ---
 
@@ -69,12 +73,22 @@ To create an engaging, physics-based pinball experience that captures the excite
 - Visual: Light blue rectangular paddles (60x12 pixels)
 
 #### Ball Queue System
-- Displays 4 standby balls on the right side of screen
+- Displays 4 standby balls positioned at top area (e.g., x=400, y=100)
 - Balls stacked vertically with 25-pixel spacing
 - Queued balls are frozen (physics disabled) and semi-transparent (80% opacity)
-- When a ball is lost, next ball automatically activates
+- Player presses Down Arrow to release ball from queue
+- Ball falls naturally with gravity to launcher below
 - Queue automatically refills when empty
-- Active ball drops from queue position (x=750, y=300) and falls naturally
+
+#### Launcher System
+- Launcher positioned below ball queue (e.g., x=400, y=200)
+- Ball falls from queue to launcher when released (Down Arrow)
+- Launcher positions ball at launch position automatically
+- Player charges launcher by holding Space key
+- Charge rate: 2.0 per second (0.0 to 1.0)
+- Launch force: Base 500 to Max 1000 (proportional to charge)
+- Launcher has ramp component to guide ball to playfield
+- Visual feedback: Plunger position and charge meter
 
 #### Obstacle System
 - 8 obstacles randomly placed per game
@@ -87,16 +101,41 @@ To create an engaging, physics-based pinball experience that captures the excite
 - Minimum 80px distance between obstacles
 - 0.5-second cooldown between scoring hits
 
+#### Holds (Target Holes) System
+- Multiple holds placed in the playfield
+- Holds have varying point values (10, 15, 20, 25, 30, etc.)
+- Uses Area2D for detection when ball enters
+- When ball enters a hold, that ball's scoring is finalized and points are awarded
+- Ball is removed and next ball is prepared
+- Visual indicators show point values
+- Positioned to avoid interference with flippers and main ball paths
+
+#### Ramps and Rails System
+- Launcher ramp guides ball from launcher to playfield
+- Multiple ramps placed in playfield to guide ball movement
+- Ramps guide ball toward center of playfield
+- Ramps guide ball toward bottom narrow space (flipper area)
+- Rails placed to guide ball movement and prevent escaping certain areas
+- Bottom area has sufficient space for flippers to hit ball
+- Ramps do not completely cover bottom area - flippers have clear access
+
 ### 2.2 Scoring System
 
 #### Point Values
-- **Bumpers**: 20 points per hit
-- **Pegs**: 5 points per hit
-- **Obstacle Walls**: 15 points per hit
+- **Bumpers**: 20 points per hit (continuous scoring)
+- **Pegs**: 5 points per hit (continuous scoring)
+- **Obstacle Walls**: 15 points per hit (continuous scoring)
+- **Holds**: Varying point values (10, 15, 20, 25, 30, etc.) - final scoring per ball
+
+#### Scoring Mechanics
+- Obstacle hits award points continuously (multiple hits possible per ball)
+- Hold entry awards final score for that ball and ends ball life
+- Ball can score from obstacles and walls while in play
+- Hold scoring finalizes the ball's total score contribution
 
 #### Score Display
 - Score shown in top-left corner of screen
-- Updates immediately when obstacles are hit
+- Updates immediately when obstacles are hit or holds are entered
 - Persists during gameplay
 - Resets when game restarts
 
@@ -114,10 +153,19 @@ To create an engaging, physics-based pinball experience that captures the excite
 - Input processing paused (except Esc to unpause)
 - UI remains visible
 
+#### Ball Release State
+- Player presses Down Arrow to release ball from queue
+- Ball unfreezes and falls to launcher
+- Launcher positions ball at launch position
+
+#### Ball Launch State
+- Ball positioned at launcher
+- Player charges launcher (Space key)
+- Ball launches through launcher ramp to playfield
+
 #### Ball Lost State
-- Ball falls below y=800 threshold
-- 1-second delay before next ball activates
-- Next ball automatically comes from queue
+- Ball enters a hold → final scoring awarded, next ball prepared
+- Ball falls below flippers → ball finished, wait for next ball release
 
 ---
 
@@ -283,7 +331,8 @@ To create an engaging, physics-based pinball experience that captures the excite
 
 - **Left Flipper**: Left Arrow key or A key
 - **Right Flipper**: Right Arrow key or D key
-- **Launch Ball** (optional): Space or Down Arrow (hold to charge)
+- **Release Ball**: Down Arrow key (releases ball from queue)
+- **Charge Launcher**: Space key (hold to charge launcher)
 - **Pause**: Esc key
 
 ### 6.2 Control Scheme
@@ -292,6 +341,13 @@ To create an engaging, physics-based pinball experience that captures the excite
   - Press and hold to activate flipper
   - Release to return to rest position
   - Continuous input (pressed action)
+- **Ball Release Control**:
+  - Single press Down Arrow to release ball from queue
+  - Instant action (just_pressed)
+- **Launcher Control**:
+  - Hold Space to charge launcher
+  - Release to launch ball
+  - Continuous input (pressed action) for charging
 - **Pause Control**:
   - Single press to pause/unpause
   - Instant action (just_pressed)
@@ -390,10 +446,11 @@ To create an engaging, physics-based pinball experience that captures the excite
 - **Physics Layers**: 
   - Layer 1: Ball
   - Layer 2: Flippers
-  - Layer 4: Walls
+  - Layer 4: Walls (includes Ramps/Rails)
   - Layer 8: Obstacles
 - **Collision Detection**: Automatic via Godot physics engine
 - **Physics Materials**: Configured per object type for realistic bounce and friction
+- **Holds Detection**: Uses Area2D with body_entered signal (no collision layer)
 
 ### 9.4 Architecture
 
@@ -406,37 +463,74 @@ To create an engaging, physics-based pinball experience that captures the excite
 
 ## 10. Audio Design
 
-### 10.1 Current Status
+### 10.1 Sound Effects System
 
-Audio design is not yet implemented. This section is a placeholder for future enhancements.
+Sound effects system is implemented using Godot's AudioStreamPlayer nodes. Sound files are stored in `assets/sounds/` directory.
 
-### 10.2 Planned Audio Elements
+### 10.2 Sound Effects
 
-- **Ball Collisions**: Bounce sounds for different surfaces
-- **Obstacle Hits**: Distinct sounds for each obstacle type
-- **Flipper Activation**: Mechanical flipper sound
+- **Flipper Click**: Plays when flipper activates (left or right)
+- **Ball Hit Obstacle**: Plays when ball collides with any obstacle
+- **Ball Launch**: Plays when launcher launches ball
+- **Ball Fall to Hold**: Plays when ball enters a hold
+- **Ball Lost**: Plays when ball falls to bottom (below flippers)
+
+### 10.3 Audio Configuration
+
+- Sound effects are configurable (volume, enable/disable)
+- Sound effects do not interrupt gameplay or cause lag
+- Recommended audio formats: .ogg (compressed) or .wav (uncompressed)
+
+### 10.4 Future Audio Elements
+
 - **Background Music**: Optional ambient pinball machine sounds
-- **UI Feedback**: Subtle sound effects for score updates
+- **UI Feedback**: Additional sound effects for score updates
 
 ---
 
-## 11. Future Enhancements
+## 11. Debug System
 
-### 11.1 Short-term Enhancements
+### 11.1 Debug Configuration
+
+Debug mode is configurable via GameManager's @export variable. When enabled, provides detailed logging and visual labels for all game entities.
+
+### 11.2 Debug Features
+
+- **Debug Mode Toggle**: Can be enabled/disabled via GameManager.debug_mode (default: false)
+- **Debug Logging**: Key operations log debug messages when debug mode is enabled
+  - Consistent format: `[ComponentName] Message`
+  - Logs for: GameManager, Ball, Flipper, Launcher, BallQueue, Obstacle, Hold, Ramp operations
+  - Error and warning logs always print regardless of debug mode
+- **Visual Debug Labels**: All entities display name labels when debug mode is enabled
+  - Ball, BallQueue, Launcher, Obstacle, Flipper, Hold, Ramp, Rail entities
+  - Labels hidden when debug mode is disabled
+  - Consistent styling: font size 12-20, white/yellow color, black outline
+  - Labels positioned to not obstruct gameplay
+
+### 11.3 Debug Performance
+
+- Debug logs have no performance impact when debug mode is disabled
+- Visual labels are conditionally created/shown based on debug mode
+- Debug system uses runtime checks, not preprocessor directives
+
+---
+
+## 12. Future Enhancements
+
+### 12.1 Short-term Enhancements
 
 - **Game Over Screen**: Display final score, restart option
 - **High Score System**: Track and display best scores
-- **Sound Effects**: Add audio feedback for collisions and actions
 - **Particle Effects**: Visual effects on obstacle hits
 
-### 11.2 Medium-term Enhancements
+### 12.2 Medium-term Enhancements
 
 - **Multiple Playfields**: Different obstacle layouts
 - **Power-ups**: Special effects or bonuses
 - **Multi-ball Mode**: Multiple active balls simultaneously
 - **Difficulty Levels**: Adjustable obstacle density and ball speed
 
-### 11.3 Long-term Enhancements
+### 12.3 Long-term Enhancements
 
 - **Campaign Mode**: Progressive levels with increasing difficulty
 - **Achievement System**: Unlockable achievements
@@ -445,35 +539,43 @@ Audio design is not yet implemented. This section is a placeholder for future en
 
 ---
 
-## 12. Game Flow Summary
+## 13. Game Flow Summary
 
-### 12.1 Initialization
+### 13.1 Initialization
 
 1. Game loads Main.tscn scene
 2. GameManager initializes game state
-3. BallQueue creates 4 standby balls
-4. ObstacleSpawner places 8 obstacles randomly
-5. First ball activates and drops from queue
+3. BallQueue creates 4 standby balls (positioned at top area)
+4. Launcher initializes (positioned below queue)
+5. ObstacleSpawner places 8 obstacles randomly
+6. Holds are placed in playfield
+7. Ramps and rails are placed in playfield
+8. Game waits for player to release ball from queue
 
-### 12.2 Core Gameplay Loop
+### 13.2 Core Gameplay Loop
 
-1. Ball drops from queue position (right side)
-2. Ball falls naturally with gravity
-3. Player uses flippers to control ball
-4. Ball hits obstacles and scores points
-5. Player attempts to keep ball in play
-6. If ball falls below threshold, ball is lost
-7. After 1-second delay, next ball activates
-8. Queue refills automatically when empty
-9. Repeat until player stops playing
+1. Player presses Down Arrow to release ball from queue
+2. Ball falls to launcher
+3. Player charges launcher (Space key) and releases to launch ball
+4. Ball travels through launcher ramp to playfield
+5. Ball interacts with obstacles and scores points
+6. Ball interacts with holds (scores final points, ends ball life)
+7. Ball travels through ramps and rails to bottom area
+8. Player uses flippers to hit ball back into playfield
+9. When ball enters hold or falls to bottom, next ball can be released
+10. Queue refills automatically when empty
+11. Repeat until player stops playing
 
-### 12.3 State Transitions
+### 13.3 State Transitions
 
-- **Initializing → Playing**: After scene load and initialization
+- **Initializing → Waiting for Release**: After scene load and initialization
+- **Waiting for Release → Ball at Launcher**: Player presses Down Arrow
+- **Ball at Launcher → Playing**: Ball launches from launcher
 - **Playing → Paused**: Player presses Esc
 - **Paused → Playing**: Player presses Esc again
-- **Playing → Ball Lost**: Ball falls below y=800
-- **Ball Lost → Playing**: After delay and next ball activation
+- **Playing → Ball in Hold**: Ball enters a hold (final scoring, next ball prepared)
+- **Playing → Ball Lost**: Ball falls below flippers
+- **Ball Lost → Waiting for Release**: After delay, ready for next ball release
 
 ---
 

@@ -8,109 +8,181 @@ signal score_changed(new_score: int)
 @export var ball_scene: PackedScene
 @export var ball_spawn_position: Vector2 = Vector2(400, 600)
 @export var launch_force: Vector2 = Vector2(0, -500)
+@export var debug_mode: bool = true  # Enable debug logging and visual labels (default: true)
 
 var current_ball: RigidBody2D = null
 var score: int = 0
 var is_paused: bool = false
 var ball_queue: Node2D = null
 var launcher: Node2D = null
+var sound_manager: Node = null
 
 func _ready():
-	print("[GameManager] _ready() called")
-	print("[GameManager] Global position: ", global_position)
-	print("[GameManager] Position: ", position)
+	if debug_mode:
+		print("[GameManager] _ready() called")
+		print("[GameManager] Global position: ", global_position)
+		print("[GameManager] Position: ", position)
 	
 	# Add to group for easy access
 	add_to_group("game_manager")
 	
 	# Find ball queue and launcher in scene
-	print("[GameManager] Looking for BallQueue at path: ../BallQueue")
+	if debug_mode:
+		print("[GameManager] Looking for BallQueue at path: ../BallQueue")
 	ball_queue = get_node_or_null("../BallQueue")
-	print("[GameManager] Looking for Launcher at path: ../Launcher")
+	if debug_mode:
+		print("[GameManager] Looking for Launcher at path: ../Launcher")
 	launcher = get_node_or_null("../Launcher")
 	
 	if not ball_queue:
 		push_warning("BallQueue not found in scene!")
-		print("[GameManager] ERROR: BallQueue not found!")
-		print("[GameManager] Available children of parent: ", get_parent().get_children() if get_parent() else "No parent")
+		if debug_mode:
+			print("[GameManager] ERROR: BallQueue not found!")
+			var parent_info = str(get_parent().get_children()) if get_parent() else "No parent"
+			print("[GameManager] Available children of parent: ", parent_info)
 	else:
-		print("[GameManager] BallQueue found!")
-		print("[GameManager] BallQueue global position: ", ball_queue.global_position)
-		print("[GameManager] BallQueue position: ", ball_queue.position)
-		print("[GameManager] BallQueue visible: ", ball_queue.visible)
+		if debug_mode:
+			print("[GameManager] BallQueue found!")
+			print("[GameManager] BallQueue global position: ", ball_queue.global_position)
+			print("[GameManager] BallQueue position: ", ball_queue.position)
+			print("[GameManager] BallQueue visible: ", ball_queue.visible)
 	
 	if not launcher:
 		push_warning("Launcher not found in scene!")
-		print("[GameManager] ERROR: Launcher not found!")
-		print("[GameManager] Available children of parent: ", get_parent().get_children() if get_parent() else "No parent")
+		if debug_mode:
+			print("[GameManager] ERROR: Launcher not found!")
+			var parent_info = str(get_parent().get_children()) if get_parent() else "No parent"
+			print("[GameManager] Available children of parent: ", parent_info)
 	else:
-		print("[GameManager] Launcher found!")
-		print("[GameManager] Launcher global position: ", launcher.global_position)
-		print("[GameManager] Launcher position: ", launcher.position)
-		print("[GameManager] Launcher visible: ", launcher.visible)
+		if debug_mode:
+			print("[GameManager] Launcher found!")
+			print("[GameManager] Launcher global position: ", launcher.global_position)
+			print("[GameManager] Launcher position: ", launcher.position)
+			print("[GameManager] Launcher visible: ", launcher.visible)
 	
 	# Connect ball queue signals
 	if ball_queue:
-		print("[GameManager] Connecting BallQueue signals")
+		if debug_mode:
+			print("[GameManager] Connecting BallQueue signals")
 		ball_queue.ball_ready.connect(_on_ball_ready)
 		ball_queue.queue_empty.connect(_on_queue_empty)
 		# Set ball scene in queue
 		ball_queue.ball_scene = ball_scene
-		print("[GameManager] Ball scene set in queue: ", ball_scene)
+		if debug_mode:
+			print("[GameManager] Ball scene set in queue: ", ball_scene)
 	
 	# Connect launcher signals
 	if launcher:
-		print("[GameManager] Connecting Launcher signals")
+		if debug_mode:
+			print("[GameManager] Connecting Launcher signals")
 		launcher.ball_launched.connect(_on_ball_launched)
 	
 	# Connect obstacle hit signals
 	connect_obstacle_signals()
 	
-	# Check viewport info
-	var viewport = get_viewport()
-	if viewport:
-		print("[GameManager] Viewport size: ", viewport.get_visible_rect().size)
-		print("[GameManager] Viewport visible rect: ", viewport.get_visible_rect())
-		var camera = viewport.get_camera_2d()
-		if camera:
-			print("[GameManager] Camera found at: ", camera.global_position, ", zoom: ", camera.zoom)
-		else:
-			print("[GameManager] No Camera2D found in viewport - this may cause visibility issues!")
-			# Try to find camera in scene
-			var camera_node = get_node_or_null("../Camera2D")
-			if camera_node:
-				print("[GameManager] Found Camera2D node at: ", camera_node.global_position)
-			else:
-				print("[GameManager] WARNING: No Camera2D in scene - objects may not be visible!")
+	# Connect hold signals
+	connect_hold_signals()
 	
-	# Initialize with first ball
-	print("[GameManager] Preparing first ball...")
-	prepare_next_ball()
-	print("[GameManager] _ready() completed")
+	# Find sound manager
+	sound_manager = get_tree().get_first_node_in_group("sound_manager")
+	if not sound_manager:
+		sound_manager = get_node_or_null("../SoundManager")
+	if sound_manager and debug_mode:
+		print("[GameManager] SoundManager found")
+	elif not sound_manager and debug_mode:
+		print("[GameManager] SoundManager not found - sounds will be disabled")
+	
+	# Check viewport info
+	if debug_mode:
+		var viewport = get_viewport()
+		if viewport:
+			print("[GameManager] Viewport size: ", viewport.get_visible_rect().size)
+			print("[GameManager] Viewport visible rect: ", viewport.get_visible_rect())
+			var camera = viewport.get_camera_2d()
+			if camera:
+				print("[GameManager] Camera found at: ", camera.global_position, ", zoom: ", camera.zoom)
+			else:
+				print("[GameManager] No Camera2D found in viewport - this may cause visibility issues!")
+				# Try to find camera in scene
+				var camera_node = get_node_or_null("../Camera2D")
+				if camera_node:
+					print("[GameManager] Found Camera2D node at: ", camera_node.global_position)
+				else:
+					print("[GameManager] WARNING: No Camera2D in scene - objects may not be visible!")
+	
+	# Initialize with first ball (will be removed, wait for release instead)
+	# prepare_next_ball()  # Commented out - wait for ball release
+	if debug_mode:
+		print("[GameManager] _ready() completed, waiting for ball release")
 
 func _input(event):
-	if event.is_action_pressed("ui_cancel"):  # Esc key
+	# Only process key events (ignore mouse movement, etc.)
+	if not event is InputEventKey:
+		return
+	
+	if event.is_action("ui_cancel") and event.pressed:  # Esc key
 		toggle_pause()
+	if event.is_action("ui_down") and event.pressed and not event.is_echo():  # Down Arrow - release ball from queue (just pressed, not held)
+		release_ball_from_queue()
+
+func release_ball_from_queue():
+	"""Handle Down Arrow input to release ball from queue"""
+	if debug_mode:
+		print("[GameManager] release_ball_from_queue() called")
+	if not ball_queue:
+		if debug_mode:
+			print("[GameManager] No ball_queue available")
+		return
+	
+	if not ball_queue.has_balls():
+		if debug_mode:
+			print("[GameManager] Queue has no balls")
+		return
+	
+	# Only release if we don't already have an active ball
+	if current_ball and is_instance_valid(current_ball):
+		if debug_mode:
+			print("[GameManager] Ball already active, ignoring release request")
+		return
+	
+	# Release ball from queue
+	var ball = ball_queue.release_next_ball()
+	if ball:
+		if debug_mode:
+			print("[GameManager] Ball released from queue, will fall to launcher")
+		current_ball = ball
+		ball.global_position = ball_queue.queue_position
+		ball.initial_position = ball_queue.queue_position
+		ball.reset_ball()
+		ball.ball_lost.connect(_on_ball_lost)
+		
+		# Ball will fall to launcher - launcher will detect and position it
+		# We'll handle ball arrival at launcher via Area2D or position check
 
 func prepare_next_ball():
 	"""Prepare the next ball from queue - ball drops from queue position on right side"""
-	print("[GameManager] prepare_next_ball() called")
+	if debug_mode:
+		print("[GameManager] prepare_next_ball() called")
 	if not ball_queue:
-		print("[GameManager] No ball_queue, using fallback spawn_ball()")
+		if debug_mode:
+			print("[GameManager] No ball_queue, using fallback spawn_ball()")
 		# Fallback to old system
 		spawn_ball()
 		return
 	
-	print("[GameManager] BallQueue has balls: ", ball_queue.has_balls())
+	if debug_mode:
+		print("[GameManager] BallQueue has balls: ", ball_queue.has_balls())
 	if not ball_queue.has_balls():
-		print("[GameManager] Queue has no balls, calling _on_queue_empty()")
+		if debug_mode:
+			print("[GameManager] Queue has no balls, calling _on_queue_empty()")
 		_on_queue_empty()
 		return
 	
 	# Get next ball from queue
 	var ball = ball_queue.get_next_ball()
 	if ball:
-		print("[GameManager] Got ball from queue, positioning at: ", ball_queue.queue_position)
+		if debug_mode:
+			print("[GameManager] Got ball from queue, positioning at: ", ball_queue.queue_position)
 		current_ball = ball
 		# Position ball at queue location (right side) - it will fall naturally
 		ball.global_position = ball_queue.queue_position
@@ -124,7 +196,8 @@ func prepare_next_ball():
 			# Wait a moment for ball to settle, then position at launcher
 			await get_tree().create_timer(0.5).timeout
 			if ball and is_instance_valid(ball):
-				print("[GameManager] Positioning ball at launcher")
+				if debug_mode:
+					print("[GameManager] Positioning ball at launcher")
 				# Pass ball to launcher - it will position it correctly
 				launcher.set_ball(ball)
 	else:
@@ -139,55 +212,59 @@ func _on_ball_ready(ball: RigidBody2D):
 		ball.initial_position = ball_queue.queue_position
 		ball.reset_ball()
 	ball.ball_lost.connect(_on_ball_lost)
-	# Pass ball to launcher if launcher exists
-	if launcher and launcher.has_method("set_ball"):
-		launcher.set_ball(ball)
+	# Ball will fall to launcher - launcher will detect arrival via _check_ball_arrival()
 
 func _on_ball_launched(_force: Vector2):
 	"""Called when ball is launched from launcher"""
-	print("[GameManager] Ball launched, preparing next ball after delay...")
-	# Wait a bit then prepare next ball for launcher
-	await get_tree().create_timer(2.0).timeout
-	# Check if ball is still active, if not prepare next one
-	if not current_ball or not is_instance_valid(current_ball):
-		print("[GameManager] Current ball is gone, preparing next ball for launcher")
-		prepare_next_ball()
+	if debug_mode:
+		print("[GameManager] Ball launched")
+	play_sound("ball_launch")
+	# Ball is now in playfield
 
 func _on_ball_lost():
 	"""Handle when ball is lost"""
-	print("[GameManager] _on_ball_lost() called")
+	if debug_mode:
+		print("[GameManager] _on_ball_lost() called")
+	play_sound("ball_lost")
 	if current_ball:
-		print("[GameManager] Ball lost at position: ", current_ball.global_position)
+		if debug_mode:
+			print("[GameManager] Ball lost at position: ", current_ball.global_position)
 		# Disconnect signal
 		if current_ball.ball_lost.is_connected(_on_ball_lost):
 			current_ball.ball_lost.disconnect(_on_ball_lost)
 		
 		# Remove ball
 		if is_instance_valid(current_ball):
-			print("[GameManager] Removing ball from scene")
+			if debug_mode:
+				print("[GameManager] Removing ball from scene")
 			current_ball.queue_free()
 		current_ball = null
 	else:
-		print("[GameManager] WARNING: _on_ball_lost() called but current_ball is null")
+		if debug_mode:
+			print("[GameManager] WARNING: _on_ball_lost() called but current_ball is null")
 	
-	# Wait a moment then prepare next ball
-	print("[GameManager] Waiting 1 second before preparing next ball...")
+	# Wait a moment then ready for next ball release (no auto-prepare)
+	if debug_mode:
+		print("[GameManager] Waiting 1 second, then ready for next ball release...")
 	await get_tree().create_timer(1.0).timeout
-	prepare_next_ball()
+	# Don't auto-prepare - wait for player to press Down Arrow
 
 func _on_queue_empty():
 	"""Handle when ball queue is empty"""
-	print("[GameManager] Queue empty - refilling...")
+	if debug_mode:
+		print("[GameManager] Queue empty - refilling...")
 	# Game over or refill queue
 	# For development: always refill the queue (infinite balls)
 	if ball_queue:
 		if ball_queue.infinite_balls:
-			print("[GameManager] Infinite balls enabled - refilling queue")
+			if debug_mode:
+				print("[GameManager] Infinite balls enabled - refilling queue")
 			ball_queue.initialize_queue()
-			prepare_next_ball()
+			# Don't auto-prepare - wait for player to press Down Arrow
 		else:
 			# Game over logic would go here
-			print("[GameManager] Game over - no more balls")
+			if debug_mode:
+				print("[GameManager] Game over - no more balls")
 
 func connect_obstacle_signals():
 	"""Connect all obstacle hit signals to scoring"""
@@ -204,9 +281,59 @@ func connect_obstacle_signals():
 		if obstacle.has_signal("obstacle_hit"):
 			obstacle.obstacle_hit.connect(_on_obstacle_hit)
 
+func connect_hold_signals():
+	"""Connect all hold entry signals to scoring"""
+	var holds = get_tree().get_nodes_in_group("holds")
+	if holds.is_empty():
+		# Find holds in HoldSpawner or Playfield
+		var spawner = get_node_or_null("../Playfield/HoldSpawner")
+		if spawner:
+			await get_tree().process_frame
+			holds = spawner.get_children()
+		else:
+			# Try to find holds directly in Playfield
+			var playfield = get_node_or_null("../Playfield")
+			if playfield:
+				holds = playfield.get_children().filter(func(child): return child.has_signal("hold_entered"))
+	
+	for hold in holds:
+		if hold.has_signal("hold_entered"):
+			hold.hold_entered.connect(_on_hold_entered)
+			if debug_mode:
+				print("[GameManager] Connected hold signal: ", hold)
+
 func _on_obstacle_hit(points: int):
 	"""Handle obstacle hit and award points"""
+	play_sound("obstacle_hit")
 	add_score(points)
+
+func _on_hold_entered(points: int):
+	"""Handle hold entry and award final scoring - ball round finished"""
+	if debug_mode:
+		print("[GameManager] Hold entered - ball captured, awarding ", points, " points (final scoring)")
+	
+	# Calculate and award score first (before ball removal)
+	play_sound("hold_entry")
+	add_score(points)
+	
+	# Brief delay for visual feedback (ball captured, score displayed)
+	if debug_mode:
+		print("[GameManager] Ball round finished - waiting 0.5s for visual feedback...")
+	await get_tree().create_timer(0.5).timeout
+	
+	# Remove captured ball and prepare for next release
+	if current_ball:
+		if current_ball.ball_lost.is_connected(_on_ball_lost):
+			current_ball.ball_lost.disconnect(_on_ball_lost)
+		if is_instance_valid(current_ball):
+			current_ball.queue_free()
+		current_ball = null
+	
+	# Wait a moment then ready for next ball release
+	if debug_mode:
+		print("[GameManager] Waiting 1 second, then ready for next ball release...")
+	await get_tree().create_timer(1.0).timeout
+	# Don't auto-prepare - wait for player to press Down Arrow
 
 func spawn_ball():
 	"""Spawn a new ball at the spawn position (fallback method)"""
@@ -226,7 +353,14 @@ func launch_ball():
 func add_score(points: int):
 	"""Add points to the score"""
 	score += points
+	if debug_mode:
+		print("[GameManager] Score changed: ", score, " (+", points, ")")
 	score_changed.emit(score)
+
+func play_sound(sound_name: String):
+	"""Play a sound effect via SoundManager"""
+	if sound_manager and sound_manager.has_method("play_sound"):
+		sound_manager.play_sound(sound_name)
 
 func reset_score():
 	"""Reset the score"""

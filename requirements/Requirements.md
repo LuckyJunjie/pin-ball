@@ -70,8 +70,11 @@
   - Bumpers: +20 points
   - Pegs: +5 points
   - Walls: +15 points
-- **FR-2.1.3**: Score must persist during gameplay
-- **FR-2.1.4**: Score must reset when game restarts
+- **FR-2.1.3**: Score must increment when ball enters holds:
+  - Holds have varying point values (10, 15, 20, 25, 30, etc.)
+  - Hold scoring finalizes the ball's score for that ball
+- **FR-2.1.4**: Score must persist during gameplay
+- **FR-2.1.5**: Score must reset when game restarts
 
 ### 1.3 Game State Management
 
@@ -98,6 +101,122 @@
 - **FR-4.2.1**: Queued balls must be visually distinct (semi-transparent)
 - **FR-4.2.2**: Active ball must be fully opaque
 - **FR-4.2.3**: Flippers must visually rotate when activated
+
+### 1.5 Sound Effects System
+
+#### FR-5.1: Sound Effects Implementation
+- **FR-5.1.1**: Sound effect system must be implemented using Godot's AudioStreamPlayer nodes
+- **FR-5.1.2**: Sound files must be placed in `assets/sounds/` directory
+- **FR-5.1.3**: Required sound effects:
+  - Flipper click sound (plays when flipper activates)
+  - Ball hit obstacle sound (plays when ball collides with obstacle)
+  - Ball launch sound (plays when launcher hits ball)
+  - Ball fall to hold sound (plays when ball enters a hold)
+  - Ball lost sound (plays when ball falls to bottom)
+- **FR-5.1.4**: Sound effects must be configurable (volume, enable/disable)
+- **FR-5.1.5**: Sound effects must not interrupt gameplay or cause lag
+
+### 1.6 Launcher System Redesign
+
+#### FR-6.1: Launcher Positioning
+- **FR-6.1.1**: Launcher must be positioned below the ball queue
+- **FR-6.1.2**: Ball queue position: Top area (e.g., x=400, y=100)
+- **FR-6.1.3**: Launcher position: Below queue (e.g., x=400, y=200)
+- **FR-6.1.4**: Launcher must have a ramp component to guide launched ball to playfield
+
+#### FR-6.2: Ball Release Mechanism
+- **FR-6.2.1**: Down Arrow key must release ball from queue
+- **FR-6.2.2**: When Down Arrow is pressed, next ball from queue unfreezes and falls to launcher
+- **FR-6.2.3**: Ball must fall naturally with gravity from queue to launcher
+- **FR-6.2.4**: Launcher must automatically position ball at launch position when ball arrives
+- **FR-6.2.5**: Space key remains for charging and launching ball from launcher
+
+### 1.7 Holds (Target Holes) System
+
+#### FR-7.1: Holds Implementation
+- **FR-7.1.1**: Multiple holds (target holes) must be placed in the playfield
+- **FR-7.1.2**: Holds must have varying point values (10, 15, 20, 25, 30, etc.)
+- **FR-7.1.3**: Holds must use Area2D for detection when ball enters
+- **FR-7.1.4**: When ball enters a hold, that ball's scoring is finalized and points are awarded
+- **FR-7.1.5**: After ball enters hold, ball is removed and next ball is prepared
+- **FR-7.1.6**: Holds must have visual indicators showing point values
+- **FR-7.1.7**: Holds must be positioned to avoid interference with flippers and main ball paths
+
+### 1.8 Ramps and Rails System
+
+#### FR-8.1: Launcher Ramp
+- **FR-8.1.1**: Launcher must have a ramp component attached
+- **FR-8.1.2**: Ramp must guide ball from launcher to playfield
+- **FR-8.1.3**: Ramp angle and length must be configured for proper ball trajectory
+
+#### FR-8.2: Playfield Ramps and Rails
+- **FR-8.2.1**: Multiple ramps must be placed in playfield to guide ball movement
+- **FR-8.2.2**: Ramps must guide ball toward center of playfield
+- **FR-8.2.3**: Ramps must guide ball toward bottom narrow space (flipper area)
+- **FR-8.2.4**: Rails must be placed to guide ball movement and prevent ball from escaping certain areas
+- **FR-8.2.5**: Bottom area must have sufficient space for flippers to hit ball
+- **FR-8.2.6**: Ramps must not completely cover bottom area - flippers must have clear access
+
+### 1.9 Updated Game Flow
+
+#### FR-9.1: Game Start Flow
+- **FR-9.1.1**: Game starts with ball in queue
+- **FR-9.1.2**: Player presses Down Arrow to release ball from queue
+- **FR-9.1.3**: Ball falls to launcher
+- **FR-9.1.4**: Player charges launcher (Space key) and releases to launch ball
+- **FR-9.1.5**: Ball travels through launcher ramp to playfield
+
+#### FR-9.2: Gameplay Flow
+- **FR-9.2.1**: Ball interacts with obstacles (scores points on hit)
+- **FR-9.2.2**: Ball interacts with holds (scores final points and ends ball life)
+- **FR-9.2.3**: Ball can hit walls (scores points)
+- **FR-9.2.4**: Ball travels through ramps and rails to bottom area
+- **FR-9.2.5**: Flippers can hit ball from bottom area (not covered by ramp)
+- **FR-9.2.6**: Ball can be hit by flippers back into playfield if timing is correct
+
+#### FR-9.3: Ball End Conditions
+- **FR-9.3.1**: Ball enters a hold → final scoring, next ball prepared
+- **FR-9.3.2**: Ball falls to bottom (below flippers) → ball finished, wait for next ball launch
+
+### 1.10 Debug System
+
+#### FR-10.1: Debug Configuration
+- **FR-10.1.1**: Debug mode must be configurable (enable/disable)
+- **FR-10.1.2**: Debug configuration must be accessible globally (singleton or GameManager)
+- **FR-10.1.3**: Debug mode can be enabled via @export variable or project setting
+- **FR-10.1.4**: Debug mode state must persist during gameplay session
+- **FR-10.1.5**: Debug configuration must be easily toggleable for development
+
+#### FR-10.2: Debug Logging
+- **FR-10.2.1**: Key operations must have debug logs when debug mode is enabled
+- **FR-10.2.2**: Debug logs must use consistent format: `[ComponentName] Message`
+- **FR-10.2.3**: Key operations requiring logging:
+  - **GameManager**: Ball spawn/loss, score changes, state transitions, component initialization
+  - **Ball**: Position updates (periodic), boundary corrections, state changes (queued/active/lost)
+  - **Flipper**: Activation/deactivation, rotation angle changes, collision events
+  - **Launcher**: Ball assignment, charge updates, launch events
+  - **BallQueue**: Queue initialization, ball retrieval, queue refill
+  - **Obstacle**: Collision detection, score awarding, cooldown state
+  - **Hold**: Ball entry detection, score awarding, ball removal
+  - **Ramp**: Ball interaction events
+- **FR-10.2.4**: Error and warning logs (push_error, push_warning) must always print regardless of debug mode
+- **FR-10.2.5**: Debug logs must not impact performance when debug mode is disabled
+
+#### FR-10.3: Visual Debug Labels
+- **FR-10.3.1**: All entities must have visual name labels when debug mode is enabled
+- **FR-10.3.2**: Visual labels must be hidden when debug mode is disabled
+- **FR-10.3.3**: Entities requiring debug labels:
+  - Ball (shows "BALL")
+  - BallQueue (shows "BALL QUEUE")
+  - Launcher (shows "LAUNCHER")
+  - Obstacle (shows "OBSTACLE" + type)
+  - Flipper (shows "FLIPPER" + side)
+  - Hold (shows "HOLD" + point value)
+  - Ramp (shows "RAMP")
+  - Rail (shows "RAIL")
+- **FR-10.3.4**: Visual labels must have consistent styling (font, size, color, outline)
+- **FR-10.3.5**: Visual labels must not obstruct gameplay when visible
+- **FR-10.3.6**: Existing add_visual_label() methods must respect debug mode setting
 
 ## 2. Non-Functional Requirements
 
@@ -141,22 +260,38 @@
 
 1. Game loads Main.tscn
 2. GameManager initializes
-3. BallQueue creates 4 standby balls
-4. ObstacleSpawner places 8 obstacles
-5. First ball activates and drops from queue
+3. BallQueue creates 4 standby balls (positioned at top area)
+4. Launcher initializes (positioned below queue)
+5. ObstacleSpawner places 8 obstacles
+6. Holds are placed in playfield
+7. Ramps and rails are placed in playfield
+8. Game waits for player to release ball from queue
 
-### 3.2 Gameplay Loop
+### 3.2 Game Start Flow
 
-1. Ball drops from queue on right side
-2. Ball falls to middle of playfield
-3. Player uses flippers to keep ball in play
-4. Ball hits obstacles and scores points
-5. If ball falls below y=800, ball is lost
-6. After 1 second delay, next ball activates from queue
-7. Repeat until queue is empty
-8. Queue refills automatically
+1. Player presses Down Arrow to release ball from queue
+2. Ball unfreezes and falls to launcher
+3. Launcher positions ball at launch position
+4. Player charges launcher (Space key) and releases to launch ball
+5. Ball travels through launcher ramp to playfield
 
-### 3.3 Pause Flow
+### 3.3 Gameplay Loop
+
+1. Ball interacts with obstacles (scores points on hit)
+2. Ball interacts with holds (scores final points, ends ball life, next ball prepared)
+3. Ball can hit walls (scores points)
+4. Ball travels through ramps and rails to bottom area
+5. Flippers can hit ball from bottom area (not covered by ramp)
+6. Ball can be hit by flippers back into playfield if timing is correct
+7. If ball falls below flippers, ball is finished
+8. After delay, next ball can be released from queue
+
+### 3.4 Ball End Conditions
+
+1. Ball enters a hold → final scoring awarded, ball removed, next ball prepared
+2. Ball falls to bottom (below flippers) → ball finished, wait for next ball release
+
+### 3.5 Pause Flow
 
 1. Player presses Esc
 2. Game tree pauses

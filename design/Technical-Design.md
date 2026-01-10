@@ -9,15 +9,22 @@ The game follows a component-based architecture using Godot's node system. Each 
 ```
 Main Scene (Main.tscn)
 ├── GameManager (Node2D) - Game state and coordination
-├── BallQueue (Node2D) - Ball queue management
-├── Launcher (Node2D) - Ball launcher mechanism (optional)
+├── BallQueue (Node2D) - Ball queue management (top area)
+├── Launcher (Node2D) - Ball launcher mechanism (below queue)
+│   └── LauncherRamp (Ramp) - Ramp to guide ball to playfield
 ├── Playfield (Node2D) - Game area container
 │   ├── Background (ColorRect) - Visual background
 │   ├── Walls (Node2D) - Boundary walls
-│   └── ObstacleSpawner (Node2D) - Obstacle placement
+│   ├── ObstacleSpawner (Node2D) - Obstacle placement
+│   ├── HoldSpawner (Node2D) - Hold placement
+│   │   └── Hold instances (Hold.tscn)
+│   └── RampRailManager (Node2D) - Ramps and rails
+│       ├── Ramp instances (Ramp.tscn)
+│       └── Rail instances (Rail.tscn)
 ├── Flippers (Node2D) - Flipper controls
 │   ├── FlipperLeft (Flipper.tscn)
 │   └── FlipperRight (Flipper.tscn)
+├── SoundManager (Node) - Audio system (optional singleton)
 └── UI (CanvasLayer) - User interface
     ├── ScoreLabel (Label)
     └── Instructions (Label)
@@ -218,6 +225,90 @@ Each component is self-contained with:
 - `spawn_obstacles()`: Place 8 obstacles randomly
 - `is_valid_position(pos)`: Check if position is valid
 
+### 3.7 Hold.gd
+
+**Purpose**: Hold (target hole) collision detection and scoring
+
+**Responsibilities**:
+- Ball entry detection via Area2D
+- Score awarding (final scoring per ball)
+- Ball removal trigger
+
+**Key Methods**:
+- `_on_body_entered(body)`: Handle ball entry
+- `add_visual_label(text)`: Add debug label if debug mode enabled
+
+**Signals**:
+- `hold_entered(points: int)`
+
+### 3.8 Launcher.gd (Updated)
+
+**Purpose**: Ball launcher with charge mechanism and ball release handling
+
+**Responsibilities**:
+- Ball positioning at launcher
+- Charge mechanism (Space key)
+- Launch force application
+- Ball release from queue (Down Arrow)
+- Ramp integration
+
+**Key Methods**:
+- `set_ball(ball)`: Position ball at launcher
+- `release_next_ball()`: Release ball from queue (Down Arrow)
+- `launch_ball()`: Launch ball with charge force
+- `update_plunger_visual()`: Update visual feedback
+
+**Signals**:
+- `ball_launched(force: Vector2)`
+
+### 3.9 SoundManager.gd (Optional)
+
+**Purpose**: Centralized sound effects management
+
+**Responsibilities**:
+- AudioStreamPlayer node management
+- Sound playback coordination
+- Volume and enable/disable configuration
+
+**Key Methods**:
+- `play_sound(sound_name: String)`: Play sound effect
+- `set_volume(volume: float)`: Set sound volume
+- `set_enabled(enabled: bool)`: Enable/disable sounds
+
+**Alternative**: AudioStreamPlayer nodes can be added directly to components (Flipper, Obstacle, Launcher, Hold, Ball)
+
+### 3.10 Ramp.gd (Updated)
+
+**Purpose**: Ramp physics and ball guidance
+
+**Responsibilities**:
+- Ramp collision shape setup
+- Ball trajectory adjustment
+- Visual representation
+
+**Key Methods**:
+- `_ready()`: Setup collision shape and visual
+- `add_visual_label(text)`: Add debug label if debug mode enabled
+
+### 3.11 GameManager.gd (Updated)
+
+**Purpose**: Central game state management (updated for new systems)
+
+**Additional Responsibilities**:
+- Debug mode configuration (@export var debug_mode: bool = false)
+- Hold signal connection and handling
+- Sound system coordination (if SoundManager used)
+- Ball release input handling (Down Arrow)
+- Updated ball lifecycle management
+
+**New Methods**:
+- `_on_hold_entered(points)`: Handle hold entry and scoring
+- `release_ball_from_queue()`: Handle Down Arrow input to release ball
+- `debug_log(message)`: Helper for debug logging (optional)
+
+**New Signals**:
+- None (uses existing score_changed signal)
+
 ## 4. Data Flow
 
 ### 4.1 Ball Lifecycle
@@ -225,24 +316,37 @@ Each component is self-contained with:
 ```
 BallQueue.initialize_queue()
   → Creates 4 frozen balls
-  → Positions at queue location (750, 300)
+  → Positions at queue location (top area, e.g., x=400, y=100)
 
-GameManager.prepare_next_ball()
-  → BallQueue.get_next_ball()
+Player presses Down Arrow
+  → GameManager.release_ball_from_queue()
+  → BallQueue.release_next_ball()
   → Ball unfreezes, becomes active
   → Ball positioned at queue location
-  → Ball falls naturally with gravity
+  → Ball falls naturally with gravity to launcher
+
+Ball arrives at launcher
+  → Launcher.set_ball(ball)
+  → Ball positioned at launcher position
+  → Ball frozen at launcher
+
+Player charges and launches ball (Space)
+  → Launcher.launch_ball()
+  → Ball unfreezes, receives launch force
+  → Ball travels through launcher ramp to playfield
 
 Ball falls and interacts with:
   → Flippers (collision)
-  → Obstacles (collision, scoring)
+  → Obstacles (collision, continuous scoring)
+  → Holds (entry detection, final scoring, ball ends)
   → Walls (collision, bounce)
+  → Ramps/Rails (trajectory adjustment)
 
-Ball falls below y=800
-  → Ball.ball_lost signal emitted
-  → GameManager._on_ball_lost()
+Ball enters hold or falls below y threshold
+  → Hold.hold_entered signal or Ball.ball_lost signal emitted
+  → GameManager handles event
   → Wait 1 second
-  → GameManager.prepare_next_ball() (repeat)
+  → GameManager waits for next ball release (Down Arrow)
 ```
 
 ### 4.2 Scoring Flow
@@ -257,6 +361,20 @@ Ball collides with Obstacle
   → GameManager.score_changed signal emitted
   → UI._on_score_changed()
   → ScoreLabel text updated
+  → SoundManager.play_sound("obstacle_hit") (if implemented)
+
+Ball enters Hold
+  → Hold._on_body_entered()
+  → Hold checks if ball is valid
+  → Hold.hold_entered signal emitted (points)
+  → GameManager._on_hold_entered(points)
+  → GameManager.add_score(points)
+  → GameManager.score_changed signal emitted
+  → UI._on_score_changed()
+  → ScoreLabel text updated
+  → Ball removed from playfield
+  → SoundManager.play_sound("hold_entry") (if implemented)
+  → GameManager waits for next ball release
 ```
 
 ### 4.3 Input Flow
@@ -267,11 +385,26 @@ Player presses Left Arrow / A
   → FlipperLeft._physics_process()
   → target_angle = pressed_angle (-45°)
   → rotation_degrees interpolates to target
+  → SoundManager.play_sound("flipper_click") (if implemented)
 
 Player releases button
   → Input.is_action_pressed() = false
   → target_angle = rest_angle (0°)
   → rotation_degrees interpolates back
+
+Player presses Down Arrow
+  → Input.is_action_just_pressed("release_ball")
+  → GameManager.release_ball_from_queue()
+  → BallQueue.release_next_ball()
+  → Ball released from queue
+
+Player presses Space
+  → Input.is_action_pressed("launch_ball")
+  → Launcher._process() charges launcher
+  → Player releases Space
+  → Launcher.launch_ball()
+  → Ball launched with force
+  → SoundManager.play_sound("ball_launch") (if implemented)
 ```
 
 ## 5. Physics System
@@ -401,15 +534,43 @@ All game elements use ColorRect for simple visual representation:
 3. Update ObstacleSpawner to include new type
 4. Configure physics material and scoring
 
-### 9.2 Adding Sound Effects
+### 9.2 Sound System Architecture
 
-1. Add AudioStreamPlayer nodes to scenes
-2. Connect signals to play sounds:
-   - Ball collision → bounce sound
-   - Obstacle hit → score sound
-   - Flipper activation → flipper sound
+**SoundManager Component** (optional):
+- Can be singleton or component in GameManager
+- Manages AudioStreamPlayer nodes
+- Provides methods: `play_sound(sound_name)`
+- Configurable volume and enable/disable
 
-### 9.3 Adding Game Over
+**Sound Implementation**:
+1. Create AudioStreamPlayer nodes in components or SoundManager
+2. Load sound files from `assets/sounds/` directory
+3. Connect signals to play sounds:
+   - Flipper activation → flipper click sound
+   - Obstacle hit → ball hit obstacle sound
+   - Launcher launch → ball launch sound
+   - Hold entry → ball fall to hold sound
+   - Ball lost → ball lost sound
+4. Sound files: .ogg (compressed) or .wav (uncompressed)
+
+### 9.3 Debug System Architecture
+
+**Debug Configuration**:
+- GameManager has @export var debug_mode: bool = false
+- Accessible via GameManager.debug_mode or DebugConfig singleton (if used)
+- Debug mode persists during gameplay session
+
+**Debug Logging**:
+- All debug print() statements wrapped: `if debug_mode: print("[Component] Message")`
+- Error/warning logs (push_error, push_warning) always execute
+- Consistent format: `[ComponentName] Message`
+
+**Visual Debug Labels**:
+- All entities check debug mode: `if debug_mode: add_visual_label("TEXT")`
+- Labels created conditionally, not hidden/shown
+- Consistent styling across all components
+
+### 9.4 Adding Game Over
 
 1. Add game_over signal to GameManager
 2. Check conditions (queue empty, time limit, etc.)
@@ -424,6 +585,8 @@ All game elements use ColorRect for simple visual representation:
 - **Rendering**: Simple ColorRect for fast rendering
 - **Signals**: Efficient signal system for event handling
 - **Object Pooling**: Queue system reuses ball instances
+- **Debug System**: Conditional logging has no performance impact when disabled
+- **Audio**: AudioStreamPlayer nodes do not cause lag when playing sounds
 
 ### 10.2 Memory Management
 

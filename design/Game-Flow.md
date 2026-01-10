@@ -9,9 +9,15 @@ Game Start
   ↓
 Initialization
   ↓
-Gameplay Loop
+Wait for Ball Release (Down Arrow)
   ↓
-Ball Lost
+Ball Falls to Launcher
+  ↓
+Player Launches Ball (Space)
+  ↓
+Gameplay Loop (Obstacles, Holds, Ramps)
+  ↓
+Ball Ends (Hold Entry or Fall to Bottom)
   ↓
 Next Ball / Game Over
   ↓
@@ -25,23 +31,27 @@ Next Ball / Game Over
    ↓
 2. Load Main.tscn
    ↓
-3. Initialize All Components
+3. Initialize All Components (Queue, Launcher, Obstacles, Holds, Ramps)
    ↓
-4. Start Gameplay
+4. Wait for Player to Release Ball (Down Arrow)
    ↓
-5. Ball Drops from Queue
+5. Ball Drops from Queue to Launcher
    ↓
-6. Player Controls Flippers
+6. Player Charges and Launches Ball (Space)
    ↓
-7. Ball Interacts with Obstacles
+7. Ball Travels Through Launcher Ramp to Playfield
    ↓
-8. Score Updates
+8. Player Controls Flippers
    ↓
-9. Ball Falls Below Threshold
+9. Ball Interacts with Obstacles (Continuous Scoring)
    ↓
-10. Next Ball Activates
+10. Ball Interacts with Holds (Final Scoring, Ball Ends)
     ↓
-11. (Repeat from step 5 or Game Over)
+11. Ball Travels Through Ramps/Rails
+    ↓
+12. Ball Falls Below Flippers or Enters Hold
+    ↓
+13. Next Ball Can Be Released (Repeat from step 4 or Game Over)
 ```
 
 ## 2. Initialization Flow
@@ -62,18 +72,21 @@ Next Ball / Game Over
 **GameManager._ready()**:
 1. Add to "game_manager" group
 2. Find BallQueue node
-3. Find Launcher node (optional)
+3. Find Launcher node
 4. Connect BallQueue signals
-5. Connect Launcher signals (if exists)
+5. Connect Launcher signals
 6. Connect obstacle signals
-7. Call `prepare_next_ball()`
+7. Connect hold signals (if holds exist)
+8. Initialize debug mode
+9. Wait for player to release ball (do not auto-prepare ball)
 
 **BallQueue._ready()**:
 1. Check if ball_scene is set
 2. Call `initialize_queue()`
 3. Create 4 standby balls
-4. Position balls in queue
+4. Position balls in queue (top area, e.g., x=400, y=100)
 5. Freeze all balls
+6. Wait for release input (Down Arrow)
 
 **ObstacleSpawner._ready()**:
 1. Check if obstacle_scene is set
@@ -81,20 +94,47 @@ Next Ball / Game Over
 3. Place 8 obstacles randomly
 4. Validate positions
 
+**Hold Spawner/Manager._ready()** (if exists):
+1. Create multiple holds in playfield
+2. Set varying point values (10, 15, 20, 25, 30, etc.)
+3. Position holds to avoid flippers and main ball paths
+4. Connect hold signals to GameManager
+
+**Ramp/Rail Manager._ready()** (if exists):
+1. Create launcher ramp
+2. Create playfield ramps
+3. Create rails for ball guidance
+4. Position ramps/rails appropriately
+
 **UI._ready()**:
 1. Find GameManager
 2. Connect score_changed signal
 3. Initialize score display
 
-### 2.2 First Ball Activation
+### 2.2 Ball Release Flow
 
-**GameManager.prepare_next_ball()**:
-1. Check if BallQueue has balls
-2. Call `BallQueue.get_next_ball()`
-3. Ball unfreezes and becomes active
-4. Position ball at queue location (750, 300)
-5. Connect ball_lost signal
-6. Ball falls naturally with gravity
+**Player Presses Down Arrow**:
+1. GameManager detects release_ball input
+2. Check if BallQueue has balls
+3. Call `BallQueue.release_next_ball()` (new method)
+4. Ball unfreezes and becomes active
+5. Ball positioned at queue location (e.g., x=400, y=100)
+6. Ball falls naturally with gravity to launcher
+7. Connect ball_lost signal
+8. Ball reaches launcher area
+
+**Ball Arrives at Launcher**:
+1. Launcher detects ball arrival (position check or Area2D)
+2. Launcher positions ball at launch position
+3. Ball frozen at launcher position
+4. Wait for player to charge launcher (Space key)
+
+**Player Launches Ball**:
+1. Player holds Space to charge launcher
+2. Launcher charges from 0.0 to 1.0
+3. Player releases Space to launch
+4. Ball unfreezes and receives launch force
+5. Ball travels through launcher ramp to playfield
 
 ## 3. Gameplay Loop
 
@@ -105,6 +145,8 @@ Next Ball / Game Over
 **Input Processing**:
 - Check flipper input (Left Arrow/A, Right Arrow/D)
 - Update flipper target angles
+- Check ball release input (Down Arrow)
+- Check launcher charge input (Space)
 - Check pause input (Esc)
 
 **Physics Processing** (`_physics_process`):
@@ -143,6 +185,21 @@ Next Ball / Game Over
 3. Boundary check (if escaped)
 4. Ball continues movement
 
+**Ball-Hold Interaction**:
+1. Ball enters hold Area2D
+2. Area2D body_entered signal triggered
+3. Hold checks if ball is valid
+4. Award points (final scoring for ball)
+5. Emit hold_entered signal
+6. Ball removed from playfield
+7. GameManager prepares next ball
+
+**Ball-Ramp Interaction**:
+1. Ball collides with ramp StaticBody2D
+2. Physics engine calculates bounce/slide
+3. Ball trajectory adjusted by ramp angle
+4. Ball continues movement along ramp path
+
 ### 3.3 Score Updates
 
 **Obstacle Hit Flow**:
@@ -168,6 +225,31 @@ If not on cooldown:
             ScoreLabel text updated
 ```
 
+**Hold Entry Flow**:
+```
+Ball enters Hold
+  ↓
+Hold._on_body_entered()
+  ↓
+Hold checks if ball is valid
+  ↓
+Hold.hold_entered signal emitted (points)
+  ↓
+GameManager._on_hold_entered(points)
+  ↓
+GameManager.add_score(points)
+  ↓
+GameManager.score_changed signal emitted
+  ↓
+UI._on_score_changed(new_score)
+  ↓
+ScoreLabel text updated
+  ↓
+Ball removed from playfield
+  ↓
+GameManager prepares next ball
+```
+
 ## 4. Ball Lifecycle
 
 ### 4.1 Ball States
@@ -179,27 +261,43 @@ If not on cooldown:
 - Positioned in queue
 - No physics active
 
-**Activating State**:
-- `get_next_ball()` called
+**Released State** (Activating):
+- `release_next_ball()` called (Down Arrow pressed)
 - Ball removed from queue
 - Queue positions updated
-
-**Active State**:
 - `freeze = false`
 - `gravity_scale = 1.0`
 - `modulate = Color(1, 1, 1, 1)` (fully opaque)
-- Positioned at queue location
+- Positioned at queue location (top area)
 - Physics active
-- Falls with gravity
+- Falls with gravity to launcher
+
+**At Launcher State**:
+- Ball reaches launcher area
+- Ball positioned at launcher position
+- Ball frozen (`freeze = true`) at launcher
+- Waiting for player to charge and launch
+
+**Launched State**:
+- Player launches ball (Space key released)
+- Ball unfrozen (`freeze = false`)
+- Ball receives launch force
+- Ball travels through launcher ramp
 
 **Playing State**:
 - Ball moving in playfield
-- Interacting with flippers, obstacles, walls
-- Scoring points
+- Interacting with flippers, obstacles, walls, holds, ramps
+- Scoring points (continuous from obstacles)
 - Physics fully active
 
+**In Hold State**:
+- Ball enters hold Area2D
+- Final scoring awarded
+- Ball marked for removal
+- `hold_entered` signal emitted
+
 **Lost State**:
-- Ball falls below y=800
+- Ball falls below flippers (below y threshold)
 - `ball_lost` signal emitted
 - Ball marked for removal
 
@@ -211,9 +309,9 @@ If not on cooldown:
 ### 4.2 Ball Transition Flow
 
 ```
-Queued → Activating → Active → Playing → Lost → Removed
-  ↑                                                      ↓
-  └────────────────── Next Ball ───────────────────────┘
+Queued → Released → At Launcher → Launched → Playing → In Hold/Lost → Removed
+  ↑                                                                          ↓
+  └────────────────────────── Next Ball ────────────────────────────────────┘
 ```
 
 ## 5. Ball Loss and Recovery
@@ -225,9 +323,26 @@ Queued → Activating → Active → Playing → Lost → Removed
 - If `global_position.y > respawn_y_threshold` (800)
 - Emit `ball_lost` signal
 
-**Loss Handling**:
+**Hold Entry Handling**:
 ```
-Ball falls below y=800
+Ball enters Hold
+  ↓
+Hold.hold_entered signal emitted (points)
+  ↓
+GameManager._on_hold_entered(points)
+  ↓
+Award final score
+  ↓
+Remove ball (queue_free())
+  ↓
+Wait 1 second
+  ↓
+GameManager waits for next ball release
+```
+
+**Ball Loss Handling**:
+```
+Ball falls below flippers (y threshold)
   ↓
 Ball.ball_lost signal emitted
   ↓
@@ -239,16 +354,14 @@ Remove ball (queue_free())
   ↓
 Wait 1 second
   ↓
-GameManager.prepare_next_ball()
-  ↓
-Next ball from queue activates
+GameManager waits for next ball release (Down Arrow)
 ```
 
 ### 5.2 Queue Management
 
 **Queue Empty Handling**:
 ```
-BallQueue.get_next_ball()
+BallQueue.release_next_ball() called
   ↓
 If queue is empty:
   ↓
@@ -260,9 +373,7 @@ If queue is empty:
         ↓
         Create 4 new balls
           ↓
-          GameManager.prepare_next_ball()
-            ↓
-            Next ball activates
+          GameManager waits for next ball release (Down Arrow)
 ```
 
 ## 6. Pause System
@@ -351,8 +462,14 @@ Game in playing state
 ### 7.2 State Transitions
 
 ```
-Initializing → Playing
+Initializing → Waiting for Release
   (After initialization complete)
+
+Waiting for Release → Ball at Launcher
+  (Down Arrow pressed, ball released from queue)
+
+Ball at Launcher → Playing
+  (Ball launched from launcher)
 
 Playing → Paused
   (Esc pressed)
@@ -360,14 +477,14 @@ Playing → Paused
 Paused → Playing
   (Esc pressed again)
 
-Playing → Ball Lost
-  (Ball falls below threshold)
+Playing → Ball Ended
+  (Ball enters hold or falls below threshold)
 
-Ball Lost → Playing
-  (After delay and next ball ready)
+Ball Ended → Waiting for Release
+  (After delay, ready for next ball release)
 
 Playing → Game Over (Future)
-  (Queue empty, no more balls)
+  (Queue empty, no more balls, no auto-refill)
 ```
 
 ## 8. Signal Flow Diagram

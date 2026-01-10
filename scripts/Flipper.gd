@@ -11,6 +11,15 @@ extends RigidBody2D
 var is_pressed: bool = false
 var target_angle: float = 0.0
 
+func _get_debug_mode() -> bool:
+	"""Helper to get debug mode from GameManager"""
+	var game_manager = get_tree().get_first_node_in_group("game_manager")
+	if game_manager:
+		var debug = game_manager.get("debug_mode")
+		if debug != null:
+			return bool(debug)
+	return false
+
 func _ready():
 	# Configure physics properties
 	gravity_scale = 0.0
@@ -36,6 +45,10 @@ func _ready():
 	physics_material.bounce = 0.6
 	physics_material.friction = 0.5
 	physics_material_override = physics_material
+	
+	# Add visual label if debug mode enabled
+	if _get_debug_mode():
+		add_visual_label("FLIPPER\n" + flipper_side.to_upper())
 
 func _physics_process(delta):
 	# Get input based on flipper side
@@ -43,20 +56,24 @@ func _physics_process(delta):
 	if flipper_side == "left":
 		input_pressed = Input.is_action_pressed("flipper_left")
 		if input_pressed and not is_pressed:
-			print("[Flipper] Left flipper pressed")
+			if _get_debug_mode():
+				print("[Flipper] Left flipper pressed")
+			_play_flipper_sound()
 	else:
 		input_pressed = Input.is_action_pressed("flipper_right")
 		if input_pressed and not is_pressed:
-			print("[Flipper] Right flipper pressed")
+			if _get_debug_mode():
+				print("[Flipper] Right flipper pressed")
+			_play_flipper_sound()
 	
 	# Update target angle based on input
 	if input_pressed:
 		target_angle = pressed_angle
-		if not is_pressed:
+		if not is_pressed and _get_debug_mode():
 			print("[Flipper] ", flipper_side, " flipper activating - target angle: ", target_angle)
 		is_pressed = true
 	else:
-		if is_pressed:
+		if is_pressed and _get_debug_mode():
 			print("[Flipper] ", flipper_side, " flipper released - returning to rest")
 		target_angle = rest_angle
 		is_pressed = false
@@ -67,3 +84,25 @@ func _physics_process(delta):
 		var rotation_dir = sign(angle_diff)
 		var rotation_amount = min(abs(angle_diff), rotation_speed * delta * 60.0)
 		rotation_degrees += rotation_dir * rotation_amount
+
+func _play_flipper_sound():
+	"""Play flipper click sound"""
+	var sound_manager = get_tree().get_first_node_in_group("sound_manager")
+	if sound_manager and sound_manager.has_method("play_sound"):
+		sound_manager.play_sound("flipper_click")
+
+func add_visual_label(text: String):
+	"""Add a visual label to identify this object"""
+	if not _get_debug_mode():
+		return
+	var label = Label.new()
+	label.name = "VisualLabel"
+	label.text = text
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_color_override("font_color", Color(0.2, 0.8, 1, 1))  # Light blue
+	label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	label.add_theme_constant_override("outline_size", 2)
+	label.position = Vector2(-30, -20)  # Offset from center
+	add_child(label)
