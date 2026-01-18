@@ -11,8 +11,15 @@ extends Node2D
 
 var spawned_obstacles: Array[Node2D] = []
 var playfield_bounds: Rect2 = Rect2(20, 20, 760, 560)  # Left, Top, Width, Height
+var maze_pipe_manager: TileMapLayer = null  # Reference to maze pipe tilemap
 
 func _ready():
+	# Find maze pipe manager
+	maze_pipe_manager = get_node_or_null("../../PipeGuide/MazePipe")
+	if not maze_pipe_manager:
+		# Try alternative path
+		maze_pipe_manager = get_tree().get_first_node_in_group("maze_pipe")
+	
 	# Define avoid zones (flipper areas, curved pipe path, queue area)
 	# Left flipper zone: approximately x: 200-300, y: 470-570
 	avoid_zones.append(Rect2(200, 470, 100, 100))
@@ -105,12 +112,27 @@ func is_valid_position(pos: Vector2) -> bool:
 		if zone.has_point(pos):
 			return false
 	
+	# Check if position is in maze (maze-aware positioning)
+	if is_position_in_maze(pos):
+			return false
+	
 	# Check distance from other obstacles
 	for obstacle in spawned_obstacles:
 		if obstacle.global_position.distance_to(pos) < min_distance_between:
 			return false
 	
 	return true
+
+func is_position_in_maze(pos: Vector2) -> bool:
+	"""Check if a position is inside maze walls"""
+	if not maze_pipe_manager:
+		return false
+	
+	# Use maze pipe manager's method to check
+	if maze_pipe_manager.has_method("is_position_in_maze"):
+		return maze_pipe_manager.is_position_in_maze(pos)
+	
+	return false
 
 func set_obstacle_size(obstacle: Node2D, radius: float, is_circle: bool):
 	"""Set obstacle to exact size (for bumpers and pegs)"""

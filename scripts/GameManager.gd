@@ -144,10 +144,17 @@ func release_ball_from_queue():
 		return
 	
 	# Only release if we don't already have an active ball
-	if current_ball and is_instance_valid(current_ball):
-		if debug_mode:
-			print("[GameManager] Ball already active, ignoring release request")
-		return
+	# Check if current_ball is valid and still in the scene tree
+	if current_ball:
+		if is_instance_valid(current_ball) and is_instance_valid(current_ball.get_parent()):
+			if debug_mode:
+				print("[GameManager] Ball already active at position: ", current_ball.global_position, ", ignoring release request")
+			return
+		else:
+			# Ball reference is invalid, clear it
+			if debug_mode:
+				print("[GameManager] Clearing invalid current_ball reference")
+			current_ball = null
 	
 	# Release ball from queue
 	var ball = ball_queue.release_next_ball()

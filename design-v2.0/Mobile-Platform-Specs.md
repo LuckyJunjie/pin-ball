@@ -28,7 +28,7 @@ com.company.pinball.premium_starter
 ```
 
 **Implementation Approach**:
-- Use GDNative plugin for StoreKit integration
+- Use GDExtension plugin for StoreKit integration (Godot 4.x compatible)
 - Or use Godot's native IAP plugin if available
 - StoreKit 2 preferred for iOS 15+ (modern async API)
 - StoreKit 1 fallback for iOS 13-14
@@ -59,7 +59,7 @@ com.company.pinball.premium_starter
 **Integration Method**:
 - Via CocoaPods (recommended)
 - Or manual framework integration
-- GDNative plugin wrapper for Godot
+- GDExtension plugin wrapper for Godot 4.x
 
 **Rewarded Ads**:
 - Initialize GADRewardedAd
@@ -122,7 +122,7 @@ com.company.pinball.premium_starter
 
 **Integration Method**:
 - Add dependency via Gradle
-- GDNative plugin wrapper for Godot
+- GDExtension plugin wrapper for Godot 4.x
 - Or use Godot's native IAP plugin if available
 
 **Purchase Flow**:
@@ -151,7 +151,7 @@ com.company.pinball.premium_starter
 
 **Integration Method**:
 - Add dependency via Gradle
-- GDNative plugin wrapper for Godot
+- GDExtension plugin wrapper for Godot 4.x
 
 **Rewarded Ads**:
 - Initialize RewardedAd

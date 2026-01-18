@@ -346,9 +346,9 @@ func purchase_product(product_id: String) -> void:
 ```
 
 **Platform Implementations**:
-- `IAPManagerIOS.gd`: Uses StoreKit via GDNative plugin
-- `IAPManagerAndroid.gd`: Uses Google Play Billing via GDNative plugin
-- `IAPManagerMock.gd`: Mock implementation for development
+- `IAPManagerIOS.gd`: Uses StoreKit via GDExtension plugin (Godot 4.x)
+- `IAPManagerAndroid.gd`: Uses Google Play Billing via GDExtension plugin (Godot 4.x)
+- `IAPManagerMock.gd`: Mock implementation for development/testing
 
 ### 5.2 Ad Abstraction Layer
 
@@ -367,12 +367,12 @@ func initialize_ads():
 ```
 
 **AdMob Integration**:
-- Use AdMob SDK via GDNative plugin
+- Use AdMob SDK via GDExtension plugin (Godot 4.x)
 - Rewarded ads: `loadRewardedAd()`, `showRewardedAd()`
 - Interstitial ads: `loadInterstitial()`, `showInterstitial()`
 
 **Unity Ads Integration** (Fallback):
-- Use Unity Ads SDK via GDNative plugin
+- Use Unity Ads SDK via GDExtension plugin (Godot 4.x)
 - Similar API to AdMob
 
 ### 5.3 Platform Detection

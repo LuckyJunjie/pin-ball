@@ -100,17 +100,29 @@ func get_next_ball() -> RigidBody2D:
 	if _get_debug_mode():
 		print("[BallQueue] Retrieved ball from queue, remaining: ", ball_queue.size())
 	
-	# Re-enable physics for the ball
+	# Position ball at maze pipe entrance area FIRST (before enabling physics)
+	# Ball should start ABOVE the launcher/maze entry point so it can fall into the maze pipe
+	# Maze pipe entry point is at (720, 400), so ball starts higher (y=100-150) to fall through maze
+	var maze_entry_pos = Vector2(720, 150)  # Start above maze entry to fall into maze pipe
+	
+	# Set initial position and reset ball state
+	ball.initial_position = maze_entry_pos
+	if ball.has_method("reset_ball"):
+		ball.reset_ball()
+	else:
+		# Fallback: manually set position if reset_ball doesn't exist
+		ball.global_position = maze_entry_pos
+	
+	# Re-enable physics for the ball AFTER positioning
 	ball.gravity_scale = 1.0
+	ball.linear_velocity = Vector2.ZERO
+	ball.angular_velocity = 0.0
+	ball.sleeping = false
 	ball.freeze = false
 	ball.modulate = Color(1, 1, 1, 1)  # Full opacity
 	
-	# Position ball at launcher/pipe entrance area
-	# Curved pipe starts at (720, 400) going up, then curves left toward center, then falls to flippers
-	# Position ball at launcher area to enter curved pipe going up
-	var launcher_pos = Vector2(720, 400)  # Launcher/pipe entry position
-	ball.global_position = launcher_pos
-	ball.initial_position = launcher_pos
+	if _get_debug_mode():
+		print("[BallQueue] Ball released at position: ", ball.global_position, ", freeze: ", ball.freeze, ", gravity: ", ball.gravity_scale)
 	
 	# Update positions of remaining balls in queue
 	update_queue_positions()

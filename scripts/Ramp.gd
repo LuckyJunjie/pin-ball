@@ -77,7 +77,7 @@ func _ready():
 	
 	# For launcher ramps, add extra curvature toward center of playfield (x=400)
 	# Get actual position (use position if global_position not yet set in _ready)
-	var ramp_x = position.x if position.x != 0 else 720  # Default to right side if not set
+	var ramp_x: float = position.x if position.x != 0.0 else 720.0  # Default to right side if not set
 	if is_inside_tree() and get_parent():
 		ramp_x = global_position.x
 	

@@ -59,10 +59,15 @@ Pinball v2.0 implements a comprehensive monetization system that balances revenu
   - Battle Pass premium track: 50-200 gems per tier (requires premium unlock)
   - In-App Purchase: Direct purchase (see IAP section)
 - **Daily Earning Potential** (Free Players):
-  - Rewarded ads: 15 gems/day
-  - Daily login (Day 7): 50 gems (weekly)
-  - Battle Pass free track: ~10-50 gems per season (rare)
-  - **Total**: ~15-20 gems/day average
+  - Rewarded ads: 15 gems/day (consistent)
+  - Daily login (Day 7): 50 gems weekly (~7 gems/day average)
+  - Battle Pass free track: ~10-50 gems per 30-day season (~0.3-1.7 gems/day average)
+  - **Total**: ~15-20 gems/day average (when accounting for weekly bonuses)
+- **Monthly Earning Potential** (Free Players - 30 days):
+  - Rewarded ads: 15 gems/day × 30 days = 450 gems/month
+  - Daily login (Day 7): 50 gems weekly × ~4 weeks = ~200 gems/month (if streak maintained)
+  - Battle Pass free track: ~10-50 gems per season = ~10-50 gems/month
+  - **Total**: ~450-600 gems/month (depending on login streak and Battle Pass rewards)
 - **Usage**:
   - Premium ball upgrades: 50-300 gems
   - Premium flipper upgrades: 75-200 gems
@@ -658,8 +663,8 @@ func can_show_interstitial_ad() -> bool:
 ```
 
 #### Platform Integration
-- **iOS**: AdMob SDK via GDNative/Godot plugin
-- **Android**: AdMob SDK via GDNative/Godot plugin
+- **iOS**: AdMob SDK via GDExtension plugin (Godot 4.x)
+- **Android**: AdMob SDK via GDExtension plugin (Godot 4.x)
 - **Development/Desktop**: Mock implementation (shows test ad or simulates)
 
 ### 5.4 Ad Revenue Optimization
@@ -729,9 +734,14 @@ func can_show_interstitial_ad() -> bool:
 - **Hold entries**: 2 entries = 20 XP
 - **Daily challenges**: 3 challenges = 300 XP (average)
 - **Daily login**: 25 XP
-- **Total**: ~450 XP/day (can complete season in ~147 days = ~5 months)
+- **Total**: ~450 XP/day average (active play)
 
-**Note**: Season is 30 days, so players need to play actively to complete. Free players can complete ~15-20 tiers, paying players (with premium track) get more value and can complete more tiers.
+**Battle Pass Completion Analysis**:
+- Total XP needed for all 50 tiers: ~66,250 XP
+- At 450 XP/day average: ~147 days needed for full completion
+- **Season is 30 days**: Players cannot complete all 50 tiers in one season (by design)
+- **Typical completion**: Free players complete ~15-20 tiers per season, paying players (with premium track) complete ~20-30 tiers
+- **Intent**: Battle Pass is designed for long-term progression, not full completion each season
 
 ### 6.4 Battle Pass UI
 

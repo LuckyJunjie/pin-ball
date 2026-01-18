@@ -13,7 +13,8 @@
 [ext_resource type="PackedScene" path="res://scenes/Hold.tscn" id="12_hold_scene"]
 [ext_resource type="Script" uid="uid://xpynup2qppu3" path="res://scripts/SoundManager.gd" id="13_sound_manager"]
 [ext_resource type="Script" uid="uid://ba5uv3udu01gs" path="res://scripts/Ramp.gd" id="14_ramp_script"]
-[ext_resource type="Script" path="res://scripts/CurvedPipe.gd" id="15_curved_pipe_script"]
+[ext_resource type="Script" path="res://scripts/MazePipeManager.gd" id="15_maze_pipe_manager"]
+[ext_resource type="TileSet" path="res://assets/tilesets/pipe_maze_tileset.tres" id="16_tileset"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_wall"]
 friction = 0.3
@@ -281,13 +282,11 @@ ball_scene = ExtResource("2_ball_scene")
 
 [node name="PipeGuide" type="Node2D" parent="."]
 
-[node name="CurvedPipe" type="StaticBody2D" parent="PipeGuide"]
-position = Vector2(720, 400)
-collision_layer = 4
-collision_mask = 0
-script = ExtResource("15_curved_pipe_script")
-pipe_width = 40.0
-curve_points = 24
+[node name="MazePipe" type="TileMapLayer" parent="PipeGuide"]
+tile_set = ExtResource("16_tileset")
+script = ExtResource("15_maze_pipe_manager")
+default_maze_layout = "level_1"
+tile_size = 32
 
 [node name="PipeBack" type="StaticBody2D" parent="PipeGuide"]
 position = Vector2(720, 105)

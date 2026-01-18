@@ -206,7 +206,10 @@ func _check_ball_arrival():
 		if ball is RigidBody2D and ball.collision_layer == 1:  # Ball layer
 			var distance = ball.global_position.distance_to(launcher_position)
 			# Check if ball is near launcher and not frozen
-			if distance < 80.0 and not ball.freeze:  # Increased range for launcher area
+			# Only catch balls that are moving toward launcher (not falling from queue above)
+			# Balls falling from queue start at y < 200, so ignore those
+			if distance < 50.0 and not ball.freeze and ball.global_position.y > 350.0:
+				# Ball is near launcher and below launcher position (came from playfield)
 				if _get_debug_mode():
 					print("[Launcher] Ball arrived at launcher area, distance: ", distance)
 				set_ball(ball)
