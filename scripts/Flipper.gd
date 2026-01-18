@@ -4,8 +4,8 @@ extends RigidBody2D
 ## Handles flipper input and rotation animation
 
 @export var flipper_side: String = "left"  # "left" or "right"
-@export var rest_angle: float = 0.0
-@export var pressed_angle: float = -45.0  # Negative for left, positive for right
+@export var rest_angle: float = 30.0  # Left: 30° (points up-right like \), Right: -30° (points up-left like /)
+@export var pressed_angle: float = -10.0  # When pressed, tip moves toward center (left: -10°, right: 10°)
 @export var rotation_speed: float = 20.0
 
 var is_pressed: bool = false
@@ -30,15 +30,30 @@ func _ready():
 	collision_mask = 1  # Collide with ball
 	mass = 1.0
 	
+	# Adjust angles based on side for \ / shape pointing toward center
+	# Left flipper: points up-right like \ (positive angle at rest)
+	# Right flipper: points up-left like / (negative angle at rest)
+	# When pressed, tips rotate TOWARD center (left rotates to negative, right rotates to positive)
+	if flipper_side == "right":
+		# Right flipper: points up-left toward center (like /)
+		# Rest: negative angle pointing up-left (-30°)
+		# Pressed: tip moves toward center by rotating to positive angle (10°)
+		if rest_angle > 0:
+			rest_angle = -abs(rest_angle)  # Convert to negative (default -30°)
+		if pressed_angle < 0:
+			pressed_angle = abs(pressed_angle)  # Convert to positive (default 10°) - tip moves left toward center
+	else:
+		# Left flipper: points up-right toward center (like \)
+		# Rest: positive angle pointing up-right (30°)
+		# Pressed: tip moves toward center by rotating to negative angle (-10°)
+		if rest_angle < 0:
+			rest_angle = abs(rest_angle)  # Convert to positive (default 30°)
+		if pressed_angle > 0:
+			pressed_angle = -abs(pressed_angle)  # Convert to negative (default -10°) - tip moves right toward center
+	
 	# Set initial angle
 	target_angle = rest_angle
 	rotation_degrees = rest_angle
-	
-	# Adjust pressed angle based on side
-	if flipper_side == "right":
-		pressed_angle = abs(pressed_angle)
-	else:
-		pressed_angle = -abs(pressed_angle)
 	
 	# Configure physics material for bounce
 	var physics_material = PhysicsMaterial.new()

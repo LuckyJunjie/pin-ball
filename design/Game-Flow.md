@@ -39,7 +39,7 @@ Next Ball / Game Over
    ↓
 6. Player Charges and Launches Ball (Space)
    ↓
-7. Ball Travels Through Launcher Ramp to Playfield
+7. Ball Travels Through Launcher Ramp to Playfield∏
    ↓
 8. Player Controls Flippers
    ↓

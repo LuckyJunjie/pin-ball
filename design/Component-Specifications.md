@@ -58,13 +58,12 @@ Ball (RigidBody2D)
 ```
 Flipper (RigidBody2D)
 ├── CollisionShape2D
-│   └── Shape: RectangleShape2D (size: Vector2(60, 12))
-└── Visual (ColorRect)
-    ├── offset_left: -30.0
-    ├── offset_top: -6.0
-    ├── offset_right: 30.0
-    ├── offset_bottom: 6.0
-    └── color: Color(0.2, 0.6, 1, 1)
+│   └── Shape: ConvexPolygonShape2D (baseball bat shape)
+│       └── Points: (-6,0), (6,0), (14,60), (12,64), (-12,64), (-14,60)
+├── Visual (Polygon2D)
+│   └── Polygon: Same as collision shape
+│   └── color: Color(0.2, 0.6, 1, 1)
+└── SpriteFallback (Sprite2D, hidden)
 ```
 
 ### 2.2 Script: Flipper.gd
@@ -73,8 +72,8 @@ Flipper (RigidBody2D)
 
 **Export Variables**:
 - `flipper_side: String = "left"` - "left" or "right"
-- `rest_angle: float = 0.0` - Rest position angle
-- `pressed_angle: float = -45.0` - Pressed position angle
+- `rest_angle: float = -45.0` - Rest position angle (45° from vertical for easier ball hitting)
+- `pressed_angle: float = -90.0` - Pressed position angle
 - `rotation_speed: float = 20.0` - Rotation speed in degrees/second
 
 **Properties**:
@@ -94,8 +93,9 @@ Flipper (RigidBody2D)
 - `_physics_process(delta)`: Handle input and rotation interpolation
 
 **Behavior**:
-- Left flipper: pressed_angle = -45°
-- Right flipper: pressed_angle = +45°
+- Left flipper: rest_angle = -45°, pressed_angle = -90°
+- Right flipper: rest_angle = 45°, pressed_angle = 90°
+- Flippers start at 45° from vertical for easier ball hitting
 - Rotation only occurs when button is pressed
 - Smooth interpolation to target angle
 
@@ -117,7 +117,7 @@ BallQueue (Node2D)
 - `ball_scene: PackedScene = null` - Ball scene to instantiate
 - `queue_size: int = 4` - Number of balls in queue
 - `queue_spacing: float = 25.0` - Vertical spacing between balls
-- `queue_position: Vector2 = Vector2(750, 300)` - Queue position (right side)
+- `queue_position: Vector2 = Vector2(720, 100)` - Queue position (top right area)
 - `queue_direction: Vector2 = Vector2(0, -1)` - Stacking direction (upward)
 
 **Properties**:
@@ -141,7 +141,15 @@ BallQueue (Node2D)
 
 **Ball State Management**:
 - **Queued**: `freeze = true`, `gravity_scale = 0.0`, `modulate = Color(1,1,1,0.8)`
-- **Active**: `freeze = false`, `gravity_scale = 1.0`, `modulate = Color(1,1,1,1)`
+- **Released**: `freeze = false`, `gravity_scale = 1.0`, `modulate = Color(1,1,1,1)`
+  - Positioned at pipe entry (queue_position + Vector2(0, 20)) = (720, 120)
+  - Falls through visible pipe guide to launcher
+
+**Pipe Guide Integration**:
+- Ball released from queue falls through visible pipe/chute
+- Pipe spans from queue area (y=100) to launcher area (y=450)
+- Pipe width: 35px (wider than ball diameter ~16px)
+- Ball slides naturally through pipe to launcher position
 
 ## 4. Game Manager Component
 
@@ -206,9 +214,9 @@ Obstacle (StaticBody2D)
 **Class**: `extends StaticBody2D`
 
 **Export Variables**:
-- `obstacle_type: String = "bumper"` - "bumper", "peg", or "wall"
-- `points: int = 20` - Points awarded on hit
-- `bounce_coefficient: float = 0.95` - Bounce physics value
+- `obstacle_type: String = "basketball"` - "basketball", "baseball_player", "baseball_bat", "soccer_goal" (or legacy: "bumper", "peg", "wall")
+- `points_value: int = 20` - Points awarded on hit
+- `bounce_strength: float = 0.95` - Bounce physics value
 
 **Properties**:
 - `collision_layer = 8` (Obstacle layer)
@@ -223,26 +231,37 @@ Obstacle (StaticBody2D)
 **Signals**:
 - `obstacle_hit(points: int)`: Emitted when ball hits obstacle
 
-**Obstacle Types**:
+**Obstacle Types (Sports-Themed)**:
 
-**Bumper**:
+**Basketball Hoop**:
 - Shape: CircleShape2D (radius: 30)
 - Points: 20
 - Bounce: 0.95
-- Color: Yellow or bright color
+- Sprite: basketball_hoop.png (60x60px, orange hoop on brown pole)
+- Replaces: Legacy "bumper" type
 
-**Peg**:
+**Baseball Player**:
 - Shape: CircleShape2D (radius: 8)
 - Points: 5
 - Bounce: 0.8
-- Color: White or light color
+- Sprite: baseball_player.png (20x40px, dark blue player silhouette)
+- Replaces: Legacy "peg" type
 
-**Wall**:
-- Shape: RectangleShape2D (size: Vector2(40, 10))
+**Baseball Bat**:
+- Shape: RectangleShape2D (size: Vector2(40, 12))
 - Points: 15
 - Bounce: 0.85
-- Rotation: Random (0-360°)
-- Color: Gray
+- Rotation: Random (-45° to 45°)
+- Sprite: baseball_bat.png (40x12px, brown bat shape)
+- Replaces: Legacy "wall" type
+
+**Soccer Goal**:
+- Shape: RectangleShape2D (size: Vector2(50, 30))
+- Points: 25
+- Bounce: 0.9
+- Rotation: Random (-30° to 30°)
+- Sprite: soccer_goal.png (50x30px, white goal posts with net pattern)
+- New obstacle type (not replacing legacy type)
 
 ## 6. Obstacle Spawner Component
 
@@ -322,7 +341,8 @@ Launcher (Node2D)
 - `base_launch_force: Vector2 = Vector2(0, -500)`
 - `max_launch_force: Vector2 = Vector2(0, -1000)`
 - `charge_rate: float = 2.0`
-- `launcher_position: Vector2 = Vector2(400, 200)` - Positioned below queue
+- `launcher_position: Vector2 = Vector2(720, 450)` - Positioned below queue on right side
+- `horizontal_launch_angle: float = -15.0` - Launch angle toward center (degrees)
 - `plunger_rest_position: Vector2 = Vector2(0, 0)`
 - `plunger_max_pull: Vector2 = Vector2(0, 30)`
 
@@ -343,11 +363,53 @@ Launcher (Node2D)
 - `add_visual_label(text: String)`: Add debug label if debug mode enabled
 
 **Launcher Ramp**:
-- Launcher has attached ramp component to guide ball to playfield
-- Ramp angle and length configured for proper ball trajectory
+- Launch angle: -15° (toward center of playfield)
+- Curved ramp guides ball from launcher to center using spline-based curve
+- Ramp uses curved path (not straight rectangle)
 
 **Signals**:
 - `ball_launched(force: Vector2)`: Emitted when ball is launched
+
+## 8A. Pipe Guide Component
+
+### 8A.1 Scene: PipeGuide (in Main.tscn)
+
+**Node Structure**:
+```
+PipeGuide (Node2D)
+├── PipeLeftWall (StaticBody2D)
+│   ├── CollisionShape2D (RectangleShape2D: 5x325)
+│   └── Visual (ColorRect, brown/tan)
+├── PipeRightWall (StaticBody2D)
+│   ├── CollisionShape2D (RectangleShape2D: 5x325)
+│   └── Visual (ColorRect, brown/tan)
+└── PipeBack (StaticBody2D)
+    ├── CollisionShape2D (RectangleShape2D: 35x3)
+    └── Visual (ColorRect, brown/tan)
+```
+
+**Properties**:
+- Position: Left wall at (702.5, 275), Right wall at (737.5, 275)
+- Back barrier at (720, 112.5) to prevent ball from going back up
+- Pipe width: 35px (between x=702.5 and x=737.5)
+- Pipe length: 325px (from y=112.5 to y=437.5)
+- `collision_layer = 4` (Wall layer)
+- `collision_mask = 0` (static)
+
+**Physics Material**:
+- `friction = 0.1` (low friction for smooth sliding)
+- `bounce = 0.3` (minimal bounce)
+
+**Visual**:
+- Color: Brown/tan (Color(0.6, 0.5, 0.3, 1))
+- Pipe walls: 5px wide, 325px tall
+- Pipe back: 35px wide, 3px tall (horizontal barrier at top)
+
+**Functionality**:
+- Guides ball from queue position (720, 100) to launcher (720, 450)
+- Ball enters pipe at y=120 (pipe entry point)
+- Ball slides naturally through pipe with gravity
+- Ball exits pipe at bottom to reach launcher position
 
 ## 9. Wall Component
 
@@ -384,6 +446,29 @@ Walls (Node2D)
 - Right: (790, 300)
 - Bottom: (400, 590)
 
+## 9B. Background Component
+
+### 9B.1 Scene: Background (in Main.tscn)
+
+**Node Structure**:
+```
+Background (Sprite2D)
+└── texture: background.png
+```
+
+**Script**: No script (static visual)
+
+**Properties**:
+- Position: `Vector2(400, 300)` - Center of playfield
+- `modulate = Color(1, 1, 1, 0.3)` - 30% opacity (70% transparent)
+- Texture: `assets/sprites/background.png`
+
+**Visual**:
+- Background image displayed at center of playfield
+- 70% transparent to reduce visual interference with game elements
+- Remains visible but doesn't obscure balls, flippers, obstacles, etc.
+- Sprite2D automatically scales to display texture at native size
+
 ## 10. Component Interactions
 
 ### 10.1 Ball ↔ Flipper
@@ -419,14 +504,38 @@ Walls (Node2D)
 ```
 Hold (Area2D)
 ├── CollisionShape2D
-│   └── Shape: CircleShape2D or RectangleShape2D
-├── Visual (ColorRect/Sprite2D)
-└── Label (Label) - Point value display
+│   └── Shape: CircleShape2D (radius: 20.0)
+├── Visual (ColorRect) - Dark hole color
+└── PointLabel (Label) - Point value display
 ```
 
 **Script: Hold.gd**
 
 **Class**: `extends Area2D`
+
+**Export Variables**:
+- `points_value: int = 10` - Point value for this hold (10, 15, 20, 25, 30, etc.)
+
+**Properties**:
+- `collision_layer = 0` (detection only)
+- `collision_mask = 1` (detect ball layer)
+- `captured_ball: RigidBody2D = null` - Currently captured ball (if any)
+
+**Methods**:
+- `_ready()`: Set up Area2D for detection and create visual
+- `_on_body_entered(body: Node2D)`: Detect ball entry and capture ball
+  - Freeze ball and position at hold center
+  - Emit hold_entered signal with points value
+  - Prevent multiple captures (only first ball captured)
+
+**Behavior**:
+- When ball enters hold, ball is frozen and positioned at hold center
+- Score is calculated and awarded
+- Ball round ends, ball removed after visual feedback delay (0.5s)
+- Next ball prepared after delay (1.0s total)
+
+**Signals**:
+- `hold_entered(points: int)`: Emitted when ball enters hold
 
 **Export Variables**:
 - `points_value: int = 10` - Point value for this hold (10, 15, 20, 25, 30, etc.)
@@ -443,16 +552,18 @@ Hold (Area2D)
 **Signals**:
 - `hold_entered(points: int)`: Emitted when ball enters hold
 
-### 10.6 Ramp Component
+### 10.6 Ramp Component (Curved/Spline-Based)
 
-**Scene: Ramp.tscn**
+**Scene: Ramp.tscn** (ramps created dynamically in Main.tscn or via Ramp.gd script)
 
 **Node Structure**:
 ```
 Ramp (StaticBody2D)
-├── CollisionShape2D
-│   └── Shape: SegmentShape2D or RectangleShape2D
-└── Visual (ColorRect/Sprite2D)
+├── RampSegments (Node2D)
+│   ├── CollisionShape2D (SegmentShape2D) - Multiple segments forming curve
+│   ├── CollisionShape2D (SegmentShape2D)
+│   └── ... (multiple segments)
+└── Visual (Line2D) - Curved visual representation
 ```
 
 **Script: Ramp.gd**
@@ -461,16 +572,27 @@ Ramp (StaticBody2D)
 
 **Export Variables**:
 - `ramp_length: float = 200.0` - Length of ramp
-- `ramp_angle: float = 30.0` - Angle in degrees
-- `ramp_width: float = 40.0` - Width of ramp
+- `ramp_angle: float = 30.0` - Starting angle in degrees
+- `ramp_width: float = 40.0` - Width of ramp visual
+- `curve_points: int = 8` - Number of segments for spline curve (more = smoother)
+- `curve_type: String = "catmull"` - Spline type: "catmull", "bezier", or "smooth"
 
 **Properties**:
 - `collision_layer = 4` (Walls layer)
 - `collision_mask = 0` (static)
 
 **Methods**:
-- `_ready()`: Setup collision shape and visual
+- `_ready()`: Generate spline curve and create collision/visual segments
+- `_generate_spline_points(control_points: Array[Vector2], segments: int) -> Array[Vector2]`: Generate spline curve points using Catmull-Rom interpolation
+- `_catmull_rom(p0, p1, p2, p3, t: float) -> Vector2`: Catmull-Rom spline interpolation
 - `add_visual_label(text: String)`: Add debug label if debug mode enabled
+
+**Curve Generation**:
+- Creates 3-4 control points based on ramp_length and ramp_angle
+- Generates smooth spline curve using Catmull-Rom interpolation
+- Creates multiple SegmentShape2D shapes forming smooth curve for collision
+- Visual representation using Line2D for curved appearance
+- Ramp is curved (orbit-like) instead of straight rectangle
 
 ### 10.7 SoundManager Component (Optional)
 
@@ -498,6 +620,19 @@ SoundManager (Node) - Optional singleton
 - `play_sound(sound_name: String)`: Play sound effect by name
 - `set_volume(volume: float)`: Set master volume
 - `set_enabled(enabled: bool)`: Enable/disable all sounds
+
+**Sound Files**:
+- Supports both WAV and OGG formats (prefers OGG)
+- Sound files: flipper_click, obstacle_hit, ball_launch, hold_entry, ball_lost
+- Placeholder WAV files generated by `scripts/generate_sounds.py`
+- Can be converted to OGG using ffmpeg or audio software
+- Gracefully handles missing sound files (no errors)
+
+**Sound Generation**:
+- `scripts/generate_sounds.py` generates procedural sound effects
+- Creates WAV files using basic tone generation
+- Instructions for conversion to OGG provided
+- Sources for commercial-quality sounds documented
 
 **Alternative Implementation**: AudioStreamPlayer nodes added directly to Flipper, Obstacle, Launcher, Hold, and Ball components
 
@@ -533,16 +668,28 @@ SoundManager (Node) - Optional singleton
 
 ### 10.12 Ball ↔ Hold
 - Entry detection via Area2D body_entered signal
-- Points awarded (final scoring for ball)
-- Ball removed after entry
+- Ball freezes and positions at hold center when entered
+- Points awarded (final scoring for ball) - calculated before ball removal
+- Ball round ends - visual feedback delay (0.5s) then ball removed
+- Next ball prepared after delay (1.0s total)
+- Only one ball can be captured per hold
 - Sound effect plays on entry (if implemented)
 
 ### 10.13 Ball ↔ Ramp/Rail
-- Collision detection via StaticBody2D
-- Ball trajectory adjusted by ramp angle
-- Ramps guide ball toward center and bottom area
+- Collision detection via StaticBody2D with multiple SegmentShape2D segments
+- Ball trajectory adjusted by curved spline-based ramp path
+- Ramps guide ball from launcher (right side) toward center of playfield
+- Curved ramps provide smooth orbit-like paths instead of straight lines
+- Ramp physics: bounce 0.6, friction 0.3
 
-### 10.14 BallQueue ↔ GameManager
+### 10.14 Ball ↔ Pipe Guide
+- Collision detection via StaticBody2D pipe walls
+- Ball slides naturally through pipe with gravity
+- Pipe guides ball from queue (720, 100) to launcher (720, 450)
+- Pipe physics: low friction (0.1) for smooth sliding, minimal bounce (0.3)
+- Ball enters pipe at y=120, exits at bottom to reach launcher
+
+### 10.15 BallQueue ↔ GameManager
 - GameManager calls release_next_ball() when Down Arrow pressed
 - BallQueue activates and provides ball
 - GameManager handles ball loss

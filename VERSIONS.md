@@ -210,4 +210,262 @@ Major gameplay enhancements with visual launcher, ball queue system, random obst
 - Multiplayer support
 - Advanced obstacle types (moving obstacles)
 
+## Version 0.2.0 - Commercial Optimization and Sports Theme
+
+**Release Date:** 2025-01-10
+
+### Overview
+Major commercial optimization update with improved visuals, sports-themed obstacles, curved ramps, pipe guide system, and enhanced gameplay mechanics.
+
+### New Features
+
+#### Visual Improvements
+- **Background Transparency**: 70% transparent background (30% opacity) reduces visual interference
+- **Flipper Baseball Bat Shape**: Changed from rectangle to baseball bat shape (ConvexPolygonShape2D)
+  - Narrow handle at base (12px wide)
+  - Wider hitting surface at tip (28px wide)
+  - Length: 64px
+- **Flipper 45-Degree Starting Angle**: Flippers start at 45° from vertical for easier ball hitting
+  - Left flipper: rest_angle = -45°, pressed_angle = -90°
+  - Right flipper: rest_angle = 45°, pressed_angle = 90°
+
+#### Pipe Guide System
+- **Visible Pipe/Chute**: Visual pipe guide from ball queue to launcher
+  - Queue position: (720, 100) - top right
+  - Launcher position: (720, 450) - bottom right
+  - Pipe width: 35px (wider than ball diameter)
+  - Pipe length: 325px
+  - Left/right collision walls (5px wide each)
+  - Back barrier at top prevents ball from going back up
+  - Low friction physics material (friction 0.1, bounce 0.3)
+
+#### Curved Ramp System
+- **Spline-Based Curved Ramps**: Replaced straight rectangles with spline curves
+  - Catmull-Rom interpolation for smooth curves
+  - Multiple SegmentShape2D shapes forming smooth curve
+  - Visual representation using Line2D
+  - Configurable control points and curve density
+  - Ramps guide ball from launcher toward center of playfield
+  - Launch angle: -15° (toward center)
+
+#### Sports-Themed Obstacles
+- **Procedural Sports Sprites**: Generated sports-themed obstacles
+  - Basketball hoop (60x60px, orange hoop on brown pole) - replaces bumpers
+  - Baseball player (20x40px, dark blue silhouette) - replaces pegs
+  - Baseball bat (40x12px, brown bat shape) - replaces wall obstacles
+  - Soccer goal (50x30px, white goal posts with net) - new obstacle type
+- **Updated Obstacle System**: ObstacleSpawner randomly selects from sports-themed types
+- **Backwards Compatibility**: Legacy types (bumper, peg, wall) still supported
+
+#### Enhanced Hold Mechanics
+- **Ball Capture**: Ball freezes and positions at hold center when entered
+- **Round End**: Score calculated before ball removal
+- **Visual Feedback**: Delay (0.5s) before ball removal for visual feedback
+- **Proper Round Ending**: Ball round ends, next ball prepared after delay (1.0s total)
+- **Single Capture**: Only one ball can be captured per hold
+
+#### Sound System
+- **Procedural Sound Generation**: `generate_sounds.py` script creates placeholder sounds
+  - Generated WAV files: flipper_click, obstacle_hit, ball_launch, hold_entry, ball_lost
+  - Instructions for conversion to OGG provided
+- **SoundManager Enhancement**: Supports both WAV and OGG formats (prefers OGG)
+- **Documentation**: Sources for commercial-quality sounds documented
+
+#### Graphics Assets Documentation
+- **Asset Specifications**: Created README with sprite specifications
+- **Commercial Sources**: Documented free commercial sources (OpenGameArt, Kenney.nl, itch.io, etc.)
+- **Placeholder Sprites**: Current sprites are placeholders ready for replacement
+
+### Updated Controls
+- **Flipper Left**: Left Arrow / A (unchanged)
+- **Flipper Right**: Right Arrow / D (unchanged)
+- **Release Ball**: Down Arrow (releases ball from queue into pipe)
+- **Charge Launcher**: Hold Space (charges launcher when ball arrives)
+- **Pause**: Esc (unchanged)
+
+### Technical Architecture
+
+#### New Scene Structure
+- `PipeGuide` node in Main.tscn with left/right walls and back barrier
+- Updated flipper instances with 45° starting angles
+- Sports-themed obstacles in ObstacleSpawner
+
+#### Updated Scripts
+- `Flipper.gd`: Angle adjustment logic for 45° starting position
+- `BallQueue.gd`: Pipe entry positioning
+- `GameManager.gd`: Removed position reset interfering with pipe
+- `Ramp.gd`: Complete rewrite with spline-based curve generation
+- `Hold.gd`: Ball capture and round end logic
+- `Obstacle.gd`: Sports-themed obstacle type support
+- `ObstacleSpawner.gd`: Sports obstacle spawning
+- `SoundManager.gd`: WAV/OGG format support
+
+#### New Scripts
+- `generate_sounds.py`: Procedural sound generation
+
+#### Updated Physics
+- Pipe guide uses low-friction physics material (friction 0.1, bounce 0.3)
+- Curved ramps use multiple SegmentShape2D segments for smooth curves
+- Hold Area2D collision_mask = 1 (detect ball layer)
+
+### Known Limitations
+- Sound files are procedural placeholders (WAV format) - can be converted to OGG or replaced with commercial sounds
+- Sports sprites are procedurally generated (simple shapes) - can be replaced with professional art assets
+- Pipe guide is functional but could have more visual polish
+- Curved ramps work but may need tuning for optimal ball trajectory
+
+### Future Enhancements
+- Replace procedural sounds with commercial-quality sound effects
+- Replace procedural sprites with professional art assets
+- Add more visual polish to pipe guide (textures, effects)
+- Fine-tune curved ramp control points for optimal gameplay
+- Add particle effects for ball hits and captures
+- Add animations for obstacle hits
+
+---
+
+## Version 2.0 - Design Documentation (Design Phase Complete)
+
+**Design Completion Date:** 2024  
+**Status:** Design documents complete, ready for implementation  
+**Implementation Status:** Not started (design phase only)
+
+### Overview
+
+Version 2.0 represents a major enhancement to the Pinball game, adding monetization systems, mobile platform support, upgrade mechanics, and comprehensive progression systems. All v1.0 features are preserved and enhanced. The design maintains full backward compatibility.
+
+**Design Documentation Location:** `design-v2.0/` directory  
+**Requirements Documentation Location:** `requirements/Requirements-v2.0.md` and `requirements/Technical-Requirements-v2.0.md`
+
+### Design Scope
+
+#### New Platform Support
+- **Mobile Platforms**: iOS (13.0+) and Android (8.0+) as primary platforms
+- **Touch Controls**: Comprehensive touch control system for mobile
+- **Responsive UI**: Mobile-first UI design with portrait/landscape support
+- **Desktop Support**: Maintained for development and testing
+
+#### Monetization Systems (NEW)
+- **Dual Currency System**: 
+  - Coins (earnable through gameplay)
+  - Gems (premium currency, earnable or purchasable)
+- **Shop System**: Comprehensive shop with 5 categories (Balls, Flippers, Ramps, Cosmetics, Specials)
+- **In-App Purchases (IAP)**: 
+  - iOS: StoreKit integration
+  - Android: Google Play Billing integration
+  - 4 gem packages ($0.99 - $19.99)
+  - 2 starter packs
+- **Advertisement Integration**:
+  - Rewarded ads (watch for coins/gems/extra ball, 3 per day limit)
+  - Interstitial ads (between game sessions, smart timing)
+  - AdMob primary, Unity Ads fallback
+- **Battle Pass System**: 
+  - 30-day seasons with 50 tiers
+  - Free track (always available)
+  - Premium track (unlock with 100 gems)
+  - XP-based progression from gameplay
+
+#### Upgrade Systems (NEW)
+- **Ball Upgrades** (6 types):
+  - Standard (default, free)
+  - Heavy (500 coins) - Increased mass and momentum
+  - Bouncy (1000 coins) - Higher bounce, more energy
+  - Magnetic (50 gems) - Attracts to obstacles
+  - Fire (150 gems) - Chain reactions, score multiplier
+  - Cosmic (300 gems) - Anti-gravity, time warp
+- **Flipper Upgrades** (6 types):
+  - Standard (default, free)
+  - Long (1000 coins) - Wider hitbox
+  - Power (50 gems) - Increased impulse force
+  - Twin (75 gems) - Dual segment flipper
+  - Plasma (150 gems) - Plasma effects, faster rotation
+  - Turbo (200 gems) - Maximum rotation speed
+- **Special Ramps** (3 types, session-based):
+  - Multiplier Ramp (100 coins) - 2× score for 10 seconds
+  - Bank Shot Ramp (200 coins) - Guides ball to target hold
+  - Accelerator Ramp (150 coins) - 50% speed boost
+
+#### Cosmetic Systems (NEW)
+- **Ball Trails**: Standard, Fire, Electric, Rainbow, Galaxy
+- **Table Skins**: Classic, Neo-Noir, Cyberpunk, Nature, Space
+- **Flipper Skins**: Visual-only customization variants
+- **Sound Packs**: Theme-based audio replacements
+
+#### Daily Systems (NEW)
+- **Daily Login Rewards**: 
+  - 7-day streak system
+  - Scaling rewards (100-500 coins, 0-50 gems)
+  - Exclusive item on Day 7
+- **Daily Challenges**: 
+  - 3 challenges per day
+  - Score, obstacle, hold, and combo challenges
+  - Auto-tracking and completion
+
+#### Data Persistence (NEW)
+- **Save System**: Comprehensive save/load system
+  - Currency (coins/gems)
+  - Owned items
+  - Equipped items
+  - Battle Pass progress
+  - Daily login streak
+  - Challenge progress
+- **Save Format**: JSON with optional encryption
+- **Backup/Restore**: Save file backup and restore functionality
+
+### Design Documents
+
+Complete design documentation is available in `design-v2.0/`:
+
+1. **GDD-v2.0.md** - Complete Game Design Document (886 lines)
+2. **Monetization-Design.md** - Revenue systems, shop, IAP, ads, battle pass
+3. **Upgrade-Systems.md** - Detailed upgrade mechanics and physics
+4. **Component-Specifications-v2.0.md** - Component architecture with new managers
+5. **Technical-Design-v2.0.md** - System architecture and platform integration
+6. **Game-Flow-v2.0.md** - Enhanced game flow with monetization features
+7. **UI-Design-v2.0.md** - Complete UI/UX specifications
+8. **Physics-Specifications-v2.0.md** - Enhanced physics for upgrades
+9. **Mobile-Platform-Specs.md** - iOS/Android platform specifications
+10. **README.md** - Navigation and overview guide
+
+### Requirements Documents
+
+Complete requirements documentation:
+
+1. **Requirements-v2.0.md** - Functional and non-functional requirements
+2. **Technical-Requirements-v2.0.md** - Technical specifications
+
+### Design Principles
+
+- **Backward Compatibility**: All v1.0 gameplay mechanics preserved
+- **Non-Predatory Monetization**: Free players can progress without paying
+- **Clear Value Proposition**: Paid items provide meaningful but balanced advantages
+- **Mobile-First UI**: Touch-friendly controls and responsive layouts
+- **Data Persistence**: All progress saved and restorable
+- **Balance**: Economy balanced for both free and paying players
+
+### Implementation Roadmap
+
+**Phase 1: Foundation** (Weeks 1-2) - Currency system, save system, shop structure  
+**Phase 2: Shop System** (Weeks 3-4) - Shop UI, purchase flow, item database  
+**Phase 3: Upgrade Systems** (Weeks 5-6) - Ball/flipper/ramp upgrades, visual effects  
+**Phase 4: Platform Integration** (Weeks 7-8) - IAP, ads, StoreKit, Google Play Billing  
+**Phase 5: Progression Systems** (Weeks 9-10) - Battle Pass, daily login, challenges  
+**Phase 6: Mobile Optimization** (Weeks 11-12) - Touch controls, UI optimization  
+**Phase 7: Polish & Testing** (Weeks 13-14) - Balance tuning, beta testing, bug fixes
+
+### Known Design Considerations
+
+- Special physics effects (magnetic, cosmic) optimized to run at 30Hz on mobile
+- Particle effects limited to 100 particles per effect for performance
+- Ad integration requires careful timing to maintain user experience
+- Economy balance needs playtesting to ensure free players can progress
+- Platform-specific implementations (IAP, ads) require abstraction layer for maintainability
+
+### Design Status
+
+✅ **DESIGN PHASE COMPLETE** - All design documents finalized  
+⏳ **IMPLEMENTATION PHASE** - Pending (design ready for implementation)
+
+See `design-v2.0/DESIGN-COMPLETE.md` for detailed design completion status and implementation roadmap.
+
 

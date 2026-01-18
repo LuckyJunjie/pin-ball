@@ -5,6 +5,62 @@ All notable changes to the Pin-Ball project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - Commercial Optimization and Sports Theme
+
+### Added
+- **Background Transparency**: 70% transparent background (30% opacity) to reduce visual interference with game elements
+- **Visible Pipe Guide**: Visual pipe/chute guiding ball from queue (720, 100) to launcher (720, 450)
+  - Left and right pipe walls with collision
+  - Back barrier at top to prevent ball from going back up
+  - Brown/tan visual appearance matching game aesthetic
+- **Sports-Themed Obstacles**: Procedural sprites replacing generic rectangles
+  - Basketball hoop (replaces bumpers) - 60x60px orange hoop on pole
+  - Baseball player (replaces pegs) - 20x40px dark blue player silhouette  
+  - Baseball bat (replaces wall obstacles) - 40x12px brown bat shape
+  - Soccer goal (new obstacle type) - 50x30px white goal posts with net
+- **Curved Ramp System**: Spline-based curved ramps using Catmull-Rom interpolation
+  - Multiple segments forming smooth curves
+  - Configurable control points and curve density
+  - Visual representation using Line2D
+- **Sound Effect System**: Procedural sound generation script
+  - Generated WAV files: flipper_click, obstacle_hit, ball_launch, hold_entry, ball_lost
+  - SoundManager supports both WAV and OGG formats
+  - Sound generation script with instructions for conversion
+- **Enhanced Hold Mechanics**: Ball capture and round end functionality
+  - Ball freezes and positions at hold center when entered
+  - Score calculated before ball removal
+  - Visual feedback delay for player
+  - Proper round ending with next ball ready
+
+### Changed
+- **Flipper Starting Angle**: Changed from 0° (vertical) to 45° from vertical
+  - Left flipper: rest_angle = -45°, pressed_angle = -90°
+  - Right flipper: rest_angle = 45°, pressed_angle = 90°
+  - Better ball hitting capability with angled starting position
+- **Flipper Shape**: Changed from rectangle to baseball bat shape
+  - ConvexPolygonShape2D with narrow handle and wider hitting surface
+  - Visual representation using Polygon2D matching collision shape
+- **Ball Queue and Launcher Positioning**: Repositioned to right side of screen
+  - BallQueue: Position (720, 100) - top right area
+  - Launcher: Position (720, 450) - bottom right area
+  - Improved visual layout and gameplay flow
+- **Ramp Guidance**: Improved ramp positioning and angles
+  - Ramps guide ball from launcher toward center of playfield
+  - Launch angle adjusted to -15° (toward center)
+- **Obstacle Types**: Changed from generic bumper/peg/wall to sports-themed
+  - Random spawning uses basketball, baseball_player, baseball_bat, soccer_goal
+  - Maintains backwards compatibility with old types
+- **Sound Manager**: Enhanced to support both WAV and OGG formats
+  - Prefers OGG, falls back to WAV
+  - Handles missing sound files gracefully
+
+### Technical Details
+- Ramp system uses spline curve generation with configurable control points
+- Pipe guide uses StaticBody2D with collision walls and low-friction physics material
+- Sports sprites generated procedurally using PNG creation algorithm
+- Flipper collision shape changed to ConvexPolygonShape2D for bat-like appearance
+- Hold collision detection properly configured with Area2D collision_mask = 1
+
 ## [0.1.1] - Enhanced Gameplay
 
 ### Added

@@ -27,18 +27,18 @@ func _ready():
 	
 	# Configure physics properties
 	gravity_scale = 1.0
-	linear_damp = 0.05  # Low damping for more realistic ball movement
-	angular_damp = 0.05
-	mass = 0.5  # Light ball
+	linear_damp = 0.02  # Very low damping for longer ball travel across playfield
+	angular_damp = 0.02
+	mass = 0.4  # Slightly lighter ball for better movement
 	
 	# Set collision layers
 	collision_layer = 1  # Ball layer
 	collision_mask = 2 | 4 | 8 | 16  # Collide with flippers (2), walls (4), obstacles (8), and holds (16)
 	
-	# Configure physics material for bounce
+	# Configure physics material for better bounce and reflection
 	var physics_material = PhysicsMaterial.new()
-	physics_material.bounce = 0.8  # High bounce
-	physics_material.friction = 0.3  # Low friction
+	physics_material.bounce = 0.85  # Higher bounce for better reflection
+	physics_material.friction = 0.2  # Lower friction for smoother movement
 	physics_material_override = physics_material
 	
 	# Add visual label if debug mode enabled

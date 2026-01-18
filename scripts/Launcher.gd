@@ -8,8 +8,8 @@ signal ball_launched(force: Vector2)
 @export var base_launch_force: Vector2 = Vector2(0, -500)
 @export var max_launch_force: Vector2 = Vector2(0, -1000)
 @export var charge_rate: float = 2.0  # Charge per second
-@export var launcher_position: Vector2 = Vector2(720, 450)  # Positioned below queue (right side)
-@export var horizontal_launch_angle: float = -15.0  # Angle in degrees (0 = straight up, negative = left toward center)
+@export var launcher_position: Vector2 = Vector2(720, 400)  # Positioned below queue, higher for better playfield access
+@export var horizontal_launch_angle: float = -35.0  # Angle in degrees (0 = straight up, negative = left toward center) - increased significantly for center guidance
 @export var plunger_rest_position: Vector2 = Vector2(0, 0)
 @export var plunger_max_pull: Vector2 = Vector2(0, 30)  # How far back the plunger can go
 
@@ -205,7 +205,8 @@ func _check_ball_arrival():
 	for ball in balls:
 		if ball is RigidBody2D and ball.collision_layer == 1:  # Ball layer
 			var distance = ball.global_position.distance_to(launcher_position)
-			if distance < 50.0 and not ball.freeze:  # Only catch unfrozen balls (falling from queue)
+			# Check if ball is near launcher and not frozen
+			if distance < 80.0 and not ball.freeze:  # Increased range for launcher area
 				if _get_debug_mode():
 					print("[Launcher] Ball arrived at launcher area, distance: ", distance)
 				set_ball(ball)

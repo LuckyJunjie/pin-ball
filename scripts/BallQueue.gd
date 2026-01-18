@@ -105,6 +105,13 @@ func get_next_ball() -> RigidBody2D:
 	ball.freeze = false
 	ball.modulate = Color(1, 1, 1, 1)  # Full opacity
 	
+	# Position ball at launcher/pipe entrance area
+	# Curved pipe starts at (720, 400) going up, then curves left toward center, then falls to flippers
+	# Position ball at launcher area to enter curved pipe going up
+	var launcher_pos = Vector2(720, 400)  # Launcher/pipe entry position
+	ball.global_position = launcher_pos
+	ball.initial_position = launcher_pos
+	
 	# Update positions of remaining balls in queue
 	update_queue_positions()
 	

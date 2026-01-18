@@ -122,7 +122,11 @@ func _input(event):
 	
 	if event.is_action("ui_cancel") and event.pressed:  # Esc key
 		toggle_pause()
-	if event.is_action("ui_down") and event.pressed and not event.is_echo():  # Down Arrow - release ball from queue (just pressed, not held)
+	
+	# Check for Down Arrow key press (ui_down action)
+	if event.is_action("ui_down") and event.pressed and not event.is_echo():
+		if debug_mode:
+			print("[GameManager] Down Arrow pressed - releasing ball from queue")
 		release_ball_from_queue()
 
 func release_ball_from_queue():
@@ -149,15 +153,21 @@ func release_ball_from_queue():
 	var ball = ball_queue.release_next_ball()
 	if ball:
 		if debug_mode:
-			print("[GameManager] Ball released from queue, will fall to launcher")
+			print("[GameManager] Ball released from queue at position: ", ball.global_position)
 		current_ball = ball
-		ball.global_position = ball_queue.queue_position
-		ball.initial_position = ball_queue.queue_position
-		ball.reset_ball()
+		# Ball position is already set to launcher/pipe entry (720, 400) in BallQueue.get_next_ball()
+		# Ensure ball is unfrozen and can fall
+		ball.freeze = false
+		ball.gravity_scale = 1.0
+		ball.linear_velocity = Vector2.ZERO
+		ball.angular_velocity = 0.0
+		ball.sleeping = false
 		ball.ball_lost.connect(_on_ball_lost)
 		
-		# Ball will fall to launcher - launcher will detect and position it
-		# We'll handle ball arrival at launcher via Area2D or position check
+		if debug_mode:
+			print("[GameManager] Ball unfrozen, will fall through curved pipe")
+		
+		# Ball will fall through curved pipe: up -> left -> center -> down to flippers
 
 func prepare_next_ball():
 	"""Prepare the next ball from queue - ball drops from queue position on right side"""
@@ -184,35 +194,24 @@ func prepare_next_ball():
 		if debug_mode:
 			print("[GameManager] Got ball from queue, positioning at: ", ball_queue.queue_position)
 		current_ball = ball
-		# Position ball at queue location (right side) - it will fall naturally
-		ball.global_position = ball_queue.queue_position
-		ball.initial_position = ball_queue.queue_position
+		# Ball is already positioned by BallQueue at pipe entry (720, 100)
+		# Ball will fall through curved pipe: up -> left -> center -> down to flippers
+		# No need to position at launcher - ball goes directly through curved pipe
 		# Reset ball state to ensure clean drop
 		ball.reset_ball()
 		# Connect ball lost signal
 		ball.ball_lost.connect(_on_ball_lost)
-		# Pass ball to launcher if launcher exists
-		if launcher and launcher.has_method("set_ball"):
-			# Wait a moment for ball to settle, then position at launcher
-			await get_tree().create_timer(0.5).timeout
-			if ball and is_instance_valid(ball):
-				if debug_mode:
-					print("[GameManager] Positioning ball at launcher")
-				# Pass ball to launcher - it will position it correctly
-				launcher.set_ball(ball)
 	else:
 		_on_queue_empty()
 
 func _on_ball_ready(ball: RigidBody2D):
 	"""Called when a ball is ready from the queue"""
 	current_ball = ball
-	# Position ball at queue location - it will fall naturally
-	if ball_queue:
-		ball.global_position = ball_queue.queue_position
-		ball.initial_position = ball_queue.queue_position
-		ball.reset_ball()
+	# Ball is already positioned by BallQueue at pipe entry
+	# Ball will fall through curved pipe: up -> left -> center -> down to flippers
+	# Players can hit or miss the ball as it falls
+	ball.reset_ball()
 	ball.ball_lost.connect(_on_ball_lost)
-	# Ball will fall to launcher - launcher will detect arrival via _check_ball_arrival()
 
 func _on_ball_launched(_force: Vector2):
 	"""Called when ball is launched from launcher"""

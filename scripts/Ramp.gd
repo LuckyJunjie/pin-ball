@@ -56,27 +56,78 @@ func _ready():
 	collision_layer = 4  # Walls layer
 	collision_mask = 0
 	
+	# Remove old collision shapes and visuals if they exist (cleanup for script-based ramps)
+	var old_collision = get_node_or_null("CollisionShape2D")
+	if old_collision:
+		old_collision.queue_free()
+	var old_visual = get_node_or_null("Visual")
+	if old_visual and old_visual is ColorRect:  # Only remove ColorRect visuals, not Line2D
+		old_visual.queue_free()
+	
 	# Configure physics material
 	var physics_material = PhysicsMaterial.new()
-	physics_material.bounce = 0.6
-	physics_material.friction = 0.3
+	physics_material.bounce = 0.7  # Higher bounce for better ball guidance toward center
+	physics_material.friction = 0.2  # Lower friction for smoother sliding and longer travel
 	physics_material_override = physics_material
 	
-	# Calculate control points for spline curve
+	# Calculate control points for spline curve that guides toward center
 	var angle_rad = deg_to_rad(ramp_angle)
 	var end_x = ramp_length * cos(angle_rad)
 	var end_y = -ramp_length * sin(angle_rad)  # Negative because Y increases downward
 	
-	# Create control points: start, middle control points for curve, end
+	# For launcher ramps, add extra curvature toward center of playfield (x=400)
+	# Get actual position (use position if global_position not yet set in _ready)
+	var ramp_x = position.x if position.x != 0 else 720  # Default to right side if not set
+	if is_inside_tree() and get_parent():
+		ramp_x = global_position.x
+	
+	# If ramp is on right side (x > 400), curve should bend left toward center
+	var center_bias = 0.0
+	if ramp_x > 400:
+		# Right side ramp - curve left toward center
+		center_bias = -abs(end_x) * 0.4  # Bend 40% toward center for better guidance
+	elif ramp_x < 400:
+		# Left side ramp - curve right toward center
+		center_bias = abs(end_x) * 0.4  # Bend 40% toward center for better guidance
+	
+	# Create control points: start, middle control points for curve toward center, end
 	var control_points: Array[Vector2] = []
 	control_points.append(Vector2(0, 0))
-	# Add curved control points (create a smooth arc)
-	control_points.append(Vector2(end_x * 0.33, end_y * 0.25))
-	control_points.append(Vector2(end_x * 0.67, end_y * 0.5))
-	control_points.append(Vector2(end_x, end_y))
+	# Add curved control points with center bias for better center guidance
+	control_points.append(Vector2(end_x * 0.33 + center_bias * 0.5, end_y * 0.25))
+	control_points.append(Vector2(end_x * 0.67 + center_bias * 0.8, end_y * 0.5))
+	control_points.append(Vector2(end_x + center_bias, end_y))
 	
-	# Generate spline points
+	# Generate spline points (in local coordinates relative to ramp position)
 	var spline_points = _generate_spline_points(control_points, curve_points)
+	
+	# Constrain ramp points to playfield bounds (x: 20-780, y: 20-600)
+	# Get ramp global position for boundary checking (use position as fallback)
+	var ramp_global_pos = position
+	if is_inside_tree():
+		ramp_global_pos = global_position
+	
+	var playfield_min_x = 20.0
+	var playfield_max_x = 780.0
+	var playfield_min_y = 20.0
+	var playfield_max_y = 600.0
+	
+	# Clamp spline points to ensure ramp stays within playfield
+	# Convert local points to global, clamp, then convert back to local
+	for i in range(spline_points.size()):
+		var local_point = spline_points[i]
+		var global_point = local_point + ramp_global_pos
+		
+		# Store original global point for boundary checking
+		var original_global = global_point
+		
+		# Clamp global point to playfield bounds
+		global_point.x = clamp(global_point.x, playfield_min_x, playfield_max_x)
+		global_point.y = clamp(global_point.y, playfield_min_y, playfield_max_y)
+		
+		# If point was clamped, adjust local point accordingly
+		if original_global != global_point:
+			spline_points[i] = global_point - ramp_global_pos
 	
 	# Create collision shapes using segments between spline points
 	var segments_container = Node2D.new()
