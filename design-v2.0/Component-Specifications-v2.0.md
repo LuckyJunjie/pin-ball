@@ -169,7 +169,68 @@ Ramp (StaticBody2D)
 - Replaces standard ramps with special variants
 - Visual indicators show active special ramps
 
-### 1.4 GameManager Component (Enhanced)
+### 1.4 MazePipeManager Component (v1.0 Feature - Preserved in v2.0)
+
+#### Script: MazePipeManager.gd
+
+**Class**: `extends TileMapLayer`
+
+**Purpose**: TileMap-based maze pipe system for guiding balls through channels before reaching the launcher/playfield
+
+**Extension**: `TileMapLayer` (Godot 4.x)
+
+**Export Variables**:
+- `default_maze_layout: String = "level_1"` - Name of default layout to load
+- `tile_size: int = 32` - Tile size in pixels
+- `maze_layout_data: Dictionary = {}` - Runtime maze data
+
+**Key Methods**:
+- `_ready()`: Load default maze layout on startup
+- `load_maze_layout_by_name(layout_name: String)`: Load maze layout from JSON file in `levels/maze_layouts/`
+- `load_maze_layout(level_data: Dictionary)`: Load maze from dictionary data
+- `create_default_maze_path()`: Create default maze path programmatically if JSON not found
+- `create_pipe_path(path_points: Array[Vector2i], wall_tile_id: int)`: Create pipe path from point array
+- `clear_maze()`: Clear all tiles from the maze
+- `is_position_in_maze(pos: Vector2) -> bool`: Check if a world position is inside a maze wall tile
+
+**Maze Layout System**:
+- JSON-based level configuration in `levels/maze_layouts/` directory
+- Tile coordinate system for maze walls
+- Support for vertical, horizontal, corner, and junction tiles
+- Extensible for multiple level designs
+- Default layout: `level_1.json` creates ball-guiding channels
+- Fallback: Programmatic default path generation if JSON not found
+
+**Scene Integration**:
+- Located in `PipeGuide/MazePipe` node in `Main.tscn`
+- Uses `TileSet` resource: `assets/tilesets/pipe_maze_tileset.tres`
+- Replaced `CurvedPipe` StaticBody2D in v1.0
+
+**Physics Configuration**:
+- Maze pipe walls: Collision layer 4 (Walls layer)
+- Physics material: friction 0.1, bounce 0.3 (low friction for smooth ball flow)
+- Tile size: 32 pixels
+- Maze channel width: 2-3 tiles wide for ball passage
+
+**Ball Flow**:
+- Ball released from queue at position (720, 150) - above maze entry
+- Ball falls naturally with gravity through maze channels
+- Maze path creates open channel (2-3 tiles wide) for ball to pass through
+- Ball exits maze into main playfield area above launcher
+
+**Integration with Other Components**:
+- ObstacleSpawner uses `is_position_in_maze()` to avoid spawning obstacles on maze tiles
+- BallQueue releases ball at maze entry position (720, 150)
+- Launcher receives ball from maze exit
+
+**Signals**:
+- None (uses TileMapLayer signals if needed)
+
+**File**: `scripts/MazePipeManager.gd`
+
+**v2.0 Status**: Preserved from v1.0, no changes required for monetization systems
+
+### 1.5 GameManager Component (Enhanced)
 
 #### Script: GameManager.gd (Enhanced)
 
@@ -191,7 +252,7 @@ Ramp (StaticBody2D)
 - `currency_earned(coins: int, gems: int)`: Emitted when currency is earned
 - `xp_earned(amount: int)`: Emitted when Battle Pass XP is earned
 
-### 1.5 UI Component (Enhanced)
+### 1.6 UI Component (Enhanced)
 
 #### Scene: UI (Enhanced)
 **Node Structure**:

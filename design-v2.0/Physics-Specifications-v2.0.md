@@ -13,6 +13,12 @@ All v1.0 physics specifications are maintained. See Physics-Specifications.md fo
 - Physics layers: Ball (1), Flippers (2), Walls (4), Obstacles (8)
 - Base ball: Mass 0.5, Bounce 0.8, Friction 0.3, Damping 0.05
 - Base flipper: Rotation speed 20°/s, Bounce 0.6, Friction 0.5
+- **Maze Pipe Walls** (v1.0 Feature - Preserved in v2.0):
+  - Collision layer: 4 (Walls layer)
+  - Bounce: 0.3 (low bounce for smooth guidance)
+  - Friction: 0.1 (very low for smooth sliding)
+  - Tile size: 32 pixels
+  - Maze channel width: 2-3 tiles wide (64-96 pixels) for ball passage
 
 ## 2. Ball Upgrade Physics
 

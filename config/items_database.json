@@ -1,0 +1,179 @@
+{
+  "items": {
+    "ball_standard": {
+      "id": "ball_standard",
+      "name": "Standard Ball",
+      "category": "ball",
+      "tier": "common",
+      "price": {
+        "currency": "coins",
+        "amount": 0
+      },
+      "owned": true,
+      "equipped": false,
+      "physics_stats": {
+        "mass": 0.5,
+        "bounce": 0.8,
+        "linear_damp": 0.05,
+        "gravity_scale": 1.0
+      },
+      "visual_stats": {
+        "icon": null,
+        "texture": null,
+        "trail_type": "standard"
+      },
+      "special_abilities": [],
+      "description": "The default ball with balanced physics."
+    },
+    "ball_heavy": {
+      "id": "ball_heavy",
+      "name": "Heavy Ball",
+      "category": "ball",
+      "tier": "common",
+      "price": {
+        "currency": "coins",
+        "amount": 500
+      },
+      "owned": false,
+      "equipped": false,
+      "physics_stats": {
+        "mass": 0.8,
+        "bounce": 0.8,
+        "linear_damp": 0.07,
+        "gravity_scale": 1.0
+      },
+      "visual_stats": {
+        "icon": null,
+        "texture": null,
+        "trail_type": "standard"
+      },
+      "special_abilities": [],
+      "description": "Increased mass for more momentum and harder hits."
+    },
+    "ball_bouncy": {
+      "id": "ball_bouncy",
+      "name": "Bouncy Ball",
+      "category": "ball",
+      "tier": "common",
+      "price": {
+        "currency": "coins",
+        "amount": 1000
+      },
+      "owned": false,
+      "equipped": false,
+      "physics_stats": {
+        "mass": 0.5,
+        "bounce": 1.0,
+        "linear_damp": 0.05,
+        "gravity_scale": 1.0
+      },
+      "visual_stats": {
+        "icon": null,
+        "texture": null,
+        "trail_type": "standard"
+      },
+      "special_abilities": [],
+      "description": "Higher bounce coefficient for more energy retention."
+    },
+    "ball_magnetic": {
+      "id": "ball_magnetic",
+      "name": "Magnetic Ball",
+      "category": "ball",
+      "tier": "premium",
+      "price": {
+        "currency": "gems",
+        "amount": 50
+      },
+      "owned": false,
+      "equipped": false,
+      "physics_stats": {
+        "mass": 0.6,
+        "bounce": 0.75,
+        "linear_damp": 0.07,
+        "gravity_scale": 1.0
+      },
+      "visual_stats": {
+        "icon": null,
+        "texture": null,
+        "trail_type": "electric"
+      },
+      "special_abilities": [
+        {
+          "type": "magnetic_attraction",
+          "force": 150.0,
+          "radius": 150.0
+        }
+      ],
+      "description": "Attracts to obstacles within range. Perfect for combo scoring!"
+    },
+    "flipper_standard": {
+      "id": "flipper_standard",
+      "name": "Standard Flipper",
+      "category": "flipper",
+      "tier": "common",
+      "price": {
+        "currency": "coins",
+        "amount": 0
+      },
+      "owned": true,
+      "equipped": false,
+      "physics_stats": {
+        "length": 64,
+        "rotation_speed": 20.0,
+        "power_multiplier": 1.0
+      },
+      "visual_stats": {
+        "icon": null,
+        "texture": null
+      },
+      "special_abilities": [],
+      "description": "The default flipper with balanced control."
+    },
+    "flipper_long": {
+      "id": "flipper_long",
+      "name": "Long Flipper",
+      "category": "flipper",
+      "tier": "common",
+      "price": {
+        "currency": "coins",
+        "amount": 1000
+      },
+      "owned": false,
+      "equipped": false,
+      "physics_stats": {
+        "length": 80,
+        "rotation_speed": 20.0,
+        "power_multiplier": 1.0
+      },
+      "visual_stats": {
+        "icon": null,
+        "texture": null
+      },
+      "special_abilities": [],
+      "description": "Wider hitbox for better ball coverage."
+    },
+    "flipper_power": {
+      "id": "flipper_power",
+      "name": "Power Flipper",
+      "category": "flipper",
+      "tier": "premium",
+      "price": {
+        "currency": "gems",
+        "amount": 50
+      },
+      "owned": false,
+      "equipped": false,
+      "physics_stats": {
+        "length": 64,
+        "rotation_speed": 20.0,
+        "power_multiplier": 1.3
+      },
+      "visual_stats": {
+        "icon": null,
+        "texture": null
+      },
+      "special_abilities": [],
+      "description": "Increased impulse force for stronger hits."
+    }
+  }
+}

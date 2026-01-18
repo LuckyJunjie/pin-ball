@@ -92,13 +92,40 @@ All v1.0 core mechanics are preserved. See v1.0 GDD sections 2.1-2.3 for complet
 - Balls stacked vertically with 25-pixel spacing
 - Queued balls are frozen (physics disabled) and semi-transparent (80% opacity)
 - Player presses Down Arrow (or touch button) to release ball from queue
-- Ball falls naturally through visible pipe guide to launcher below
+- Ball released at maze entry position (x=720, y=150) - above maze pipe
+- Ball falls naturally through tile-based maze pipe system to launcher below
 - Queue automatically refills when empty
 - **v2.0 Enhancement**: Equipped ball visual is reflected in queued balls
 
+#### Maze Pipe System (v1.0 Feature - Preserved in v2.0)
+- **TileMap-Based Maze Pipes**: TileMapLayer-based maze system that replaced CurvedPipe
+  - `MazePipeManager.gd`: Manages maze pipe tilemap configuration
+  - `assets/tilesets/pipe_maze_tileset.tres`: TileSet resource with pipe wall tiles
+  - Level-based maze layouts via JSON files in `levels/maze_layouts/`
+  - Default layout: `level_1.json` creates ball-guiding channels
+- **Maze Layout System**: JSON-based level configuration
+  - Tile coordinate system for maze walls (32-pixel tiles)
+  - Support for vertical, horizontal, corner, and junction tiles
+  - Extensible for multiple level designs
+  - Programmatic default path generation if JSON not found
+- **Maze Physics**:
+  - Maze pipe walls: Collision layer 4 (Walls layer)
+  - Physics material: friction 0.1, bounce 0.3 (low friction for smooth ball flow)
+  - Tile size: 32 pixels
+  - Maze channel width: 2-3 tiles wide for ball passage
+- **Maze-Aware Obstacle Spawning**: ObstacleSpawner enhanced with maze detection
+  - Checks if spawn position is inside maze walls
+  - Avoids spawning obstacles on maze tiles
+  - Maintains random spawning in open areas
+- **Ball Flow Through Maze**:
+  - Ball enters maze at position (720, 150)
+  - Falls through maze channels guided by tile walls
+  - Exits maze into main playfield area above launcher
+  - Maze path creates open channel (2-3 tiles wide) for ball to pass through
+
 #### Launcher System
 - Launcher positioned below ball queue on right side (x=720, y=450)
-- Ball falls from queue to launcher through visible pipe guide
+- Ball arrives from maze pipe system above launcher
 - Launcher positions ball at launch position automatically
 - Player charges launcher by holding Space key (or touch hold)
 - Charge rate: 2.0 per second (0.0 to 1.0)
@@ -114,7 +141,7 @@ All v1.0 core mechanics are preserved. See v1.0 GDD sections 2.1-2.3 for complet
   - **Baseball Player**: Small circular (8px radius), 5 points, medium bounce (0.8)
   - **Baseball Bat**: Rectangular (40x12px), 15 points, high bounce (0.85), random rotation
   - **Soccer Goal**: Rectangular (50x30px), 25 points, bounce (0.9), random rotation
-- Obstacles avoid flipper zones and launcher area
+- Obstacles avoid flipper zones, launcher area, and maze pipe walls (maze-aware spawning)
 - Minimum 50px distance from playfield walls
 - Minimum 80px distance between obstacles
 - 0.5-second cooldown between scoring hits
@@ -779,7 +806,7 @@ See Monetization-Design.md for complete Battle Pass specifications.
 ### 13.2 Core Gameplay Loop (Enhanced)
 
 1. Player presses Down Arrow (or touch) to release ball from queue
-2. Ball falls to launcher through visible pipe guide
+2. Ball falls through tile-based maze pipe system to launcher below
 3. Player charges launcher (Space key or touch) and releases to launch ball
 4. Ball travels through launcher ramp to playfield
 5. Ball interacts with obstacles and scores points (awards coins and XP)

@@ -16,6 +16,8 @@ var is_paused: bool = false
 var ball_queue: Node2D = null
 var launcher: Node2D = null
 var sound_manager: Node = null
+var game_version: String = "v1.x"  # v1.x or v2.0
+var is_v2_mode: bool = false
 
 func _ready():
 	if debug_mode:
@@ -25,6 +27,14 @@ func _ready():
 	
 	# Add to group for easy access
 	add_to_group("game_manager")
+	
+	# Check game version from GlobalGameSettings
+	var global_settings = get_node_or_null("/root/GlobalGameSettings")
+	if global_settings:
+		game_version = global_settings.game_version
+		is_v2_mode = (game_version == "v2.0")
+		if debug_mode:
+			print("[GameManager] Game version: ", game_version, " (v2.0 mode: ", is_v2_mode, ")")
 	
 	# Find ball queue and launcher in scene
 	if debug_mode:
@@ -312,6 +322,16 @@ func _on_obstacle_hit(points: int):
 	"""Handle obstacle hit and award points"""
 	play_sound("obstacle_hit")
 	add_score(points)
+	
+	# v2.0: Award coins for obstacle hits (1 coin per 100 points)
+	if is_v2_mode:
+		var coins_to_award = points / 100
+		if coins_to_award > 0:
+			var currency_mgr = get_node_or_null("/root/CurrencyManager")
+			if currency_mgr:
+				currency_mgr.add_coins(coins_to_award)
+				if debug_mode:
+					print("[GameManager] Awarded ", coins_to_award, " coins for obstacle hit")
 
 func _on_hold_entered(points: int):
 	"""Handle hold entry and award final scoring - ball round finished"""
@@ -321,6 +341,16 @@ func _on_hold_entered(points: int):
 	# Calculate and award score first (before ball removal)
 	play_sound("hold_entry")
 	add_score(points)
+	
+	# v2.0: Award bonus coins for hold entry (points / 10)
+	if is_v2_mode:
+		var coins_to_award = points / 10
+		if coins_to_award > 0:
+			var currency_mgr = get_node_or_null("/root/CurrencyManager")
+			if currency_mgr:
+				currency_mgr.add_coins(coins_to_award)
+				if debug_mode:
+					print("[GameManager] Awarded ", coins_to_award, " bonus coins for hold entry")
 	
 	# Brief delay for visual feedback (ball captured, score displayed)
 	if debug_mode:

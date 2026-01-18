@@ -58,8 +58,12 @@ Player Selects Action:
 4. Wait for Player to Release Ball (Down Arrow / Touch)
    ↓
 5. Ball Drops from Queue (with equipped ball visual)
+   - Ball released at maze entry position (720, 150)
    ↓
-6. Ball Falls to Launcher Through Pipe
+6. Ball Falls Through Tile-Based Maze Pipe System
+   - Ball falls through maze channels guided by tile walls
+   - MazePipeManager manages maze layout (JSON-based or default)
+   - Ball exits maze into main playfield area above launcher
    ↓
 7. Player Charges and Launches Ball (Space / Touch)
    ↓

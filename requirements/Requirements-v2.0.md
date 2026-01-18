@@ -27,6 +27,14 @@ All v1.0 core gameplay requirements (FR-1.1 through FR-1.10) are maintained and 
 - UI elements (FR-4.1, FR-4.2)
 - Sound effects (FR-5.1)
 - Launcher system (FR-6.1, FR-6.2, FR-6.3)
+- **Maze Pipe System** (v1.0 Feature - FR-1.7):
+  - TileMap-based maze pipe system must guide balls through channels
+  - MazePipeManager must load maze layouts from JSON files or create default paths
+  - Maze pipe walls must use collision layer 4 (Walls layer)
+  - Maze pipe physics: friction 0.1, bounce 0.3 (low friction for smooth ball flow)
+  - Maze channel width: 2-3 tiles wide (64-96 pixels) for ball passage
+  - Ball release position: (720, 150) - above maze entry
+  - ObstacleSpawner must avoid spawning obstacles on maze tiles (maze-aware spawning)
 - Holds system (FR-7.1)
 - Ramps and rails (FR-8.1, FR-8.2)
 - Game flow (FR-9.1, FR-9.2, FR-9.3)

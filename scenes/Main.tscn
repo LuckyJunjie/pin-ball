@@ -344,6 +344,32 @@ Right/D: Right Flipper
 Hold Space/Down: Charge Launcher
 Esc: Pause"
 
+[node name="CurrencyDisplay" type="HBoxContainer" parent="UI"]
+offset_left = 580.0
+offset_top = 20.0
+offset_right = 780.0
+offset_bottom = 80.0
+visible = false
+
+[node name="CoinLabel" type="Label" parent="UI/CurrencyDisplay"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.84, 0, 1)
+theme_override_font_sizes/font_size = 20
+text = "Coins: 0"
+
+[node name="GemLabel" type="Label" parent="UI/CurrencyDisplay"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.4, 1, 1)
+theme_override_font_sizes/font_size = 20
+text = "Gems: 0"
+
+[node name="BackToMenuButton" type="Button" parent="UI"]
+offset_left = 20.0
+offset_top = 550.0
+offset_right = 150.0
+offset_bottom = 590.0
+text = "← Back to Menu"
+
 [node name="Visual" type="ColorRect" parent="."]
 offset_left = 249.16058
 offset_top = -430.14417

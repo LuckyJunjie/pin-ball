@@ -15,7 +15,8 @@ The v2.0 architecture builds upon v1.0's component-based design, adding a moneti
                   ↓
 ┌─────────────────────────────────────────┐
 │        Gameplay Layer (v1.0)            │
-│  (Ball, Flipper, Obstacle, GameManager) │
+│  (Ball, Flipper, Obstacle, GameManager, │
+│   MazePipeManager, Launcher, BallQueue) │
 └─────────────────────────────────────────┘
                   ↓
 ┌─────────────────────────────────────────┐
@@ -58,12 +59,16 @@ Main (Node2D)
 ├── Camera2D
 ├── GameManager (Enhanced with monetization integration)
 ├── SoundManager (Inherited)
+├── PipeGuide (Node2D - v1.0 Feature - Preserved in v2.0)
+│   ├── MazePipe (TileMapLayer - MazePipeManager.gd)
+│   │   └── TileSet: assets/tilesets/pipe_maze_tileset.tres
+│   └── PipeBack (StaticBody2D - Visual barrier)
 ├── Playfield (Node2D)
 │   ├── Background (Sprite2D - can be themed)
 │   ├── Walls (Node2D)
 │   ├── BallQueue (Enhanced - shows equipped ball visual)
 │   ├── Launcher (Inherited)
-│   ├── ObstacleSpawner (Inherited)
+│   ├── ObstacleSpawner (Inherited - maze-aware spawning)
 │   ├── HoldSpawner (Inherited)
 │   ├── RampManager (Enhanced - special ramps)
 │   └── Flippers (Node2D)
