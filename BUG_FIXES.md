@@ -261,5 +261,134 @@ Updated all remaining Hold scene references from ExtResource("11_hold_scene") to
 
 ---
 
-**Last Updated:** 2024-12-19
+---
+
+## Bug 13: Invalid Texture UIDs in Scene Files (Fixed)
+
+**Root Cause:**  
+Scene files (Ball.tscn, Obstacle.tscn) contained invalid UID references for textures. The UIDs `uid://ball_texture` and `uid://bumper_texture` didn't match the actual resource UIDs from the import files.
+
+**Error Message:**
+```
+W 0:00:00:295   load: res://scenes/Ball.tscn:4 - ext_resource, invalid UID: uid://ball_texture - using text path instead: res://assets/sprites/ball.png
+W 0:00:00:299   load: res://scenes/Obstacle.tscn:4 - ext_resource, invalid UID: uid://bumper_texture - using text path instead: res://assets/sprites/bumper.png
+```
+
+**Solution:**  
+Updated UID references to match the actual resource UIDs from the import files:
+- Ball.tscn: Changed `uid://ball_texture` to `uid://crq2nyf046hpl`
+- Obstacle.tscn: Changed `uid://bumper_texture` to `uid://d1pxl2d7eeg41`
+
+**Files:** `scenes/Ball.tscn`, `scenes/Obstacle.tscn`  
+**Time:** 2025-01-18  
+**Status:** ✅ FIXED
+
+---
+
+## Bug 14: Ternary Operator Type Incompatibility in Ramp.gd
+
+**Root Cause:**  
+The ternary operator `position.x if position.x != 0 else 720` was incompatible because `position.x` is a float and `720` is an int. GDScript requires both branches to be compatible types.
+
+**Error Message:**
+```
+W 0:00:00:307   GDScript::reload: Values of the ternary operator are not mutually compatible.
+<GDScript Error>INCOMPATIBLE_TERNARY
+<GDScript Source>Ramp.gd:80
+```
+
+**Solution:**  
+Explicitly typed the variable as `float` and used float literals:
+```gdscript
+# Before:
+var ramp_x = position.x if position.x != 0 else 720
+
+# After:
+var ramp_x: float = position.x if position.x != 0.0 else 720.0
+```
+
+**File:** `scripts/Ramp.gd` (line 80)  
+**Time:** 2025-01-18  
+**Status:** ✅ FIXED
+
+---
+
+## Bug 15: TileSet.INVALID_SOURCE Does Not Exist in Godot 4
+
+**Root Cause:**  
+The code referenced `TileSet.INVALID_SOURCE` which doesn't exist in Godot 4. The `get_cell_source_id()` method returns `-1` for invalid/empty cells instead of a constant.
+
+**Error Message:**
+```
+Parser Error: Cannot find member "INVALID_SOURCE" in base "TileSet".
+```
+
+**Solution:**  
+Changed the check to compare against `-1` instead of `TileSet.INVALID_SOURCE`:
+```gdscript
+# Before:
+return source_id != TileSet.INVALID_SOURCE
+
+# After:
+return source_id != -1  # -1 indicates no tile/empty cell
+```
+
+**File:** `scripts/MazePipeManager.gd` (line 167)  
+**Time:** 2025-01-18  
+**Status:** ✅ FIXED
+
+---
+
+## Bug 16: Ball Cannot Be Released - Launcher Catches Ball Immediately
+
+**Root Cause:**  
+The ball was released from queue at position (720, 400), which is the same position as the Launcher. The Launcher's `_check_ball_arrival()` function detected the ball immediately and called `set_ball()`, which froze the ball (`ball.freeze = true`), preventing it from falling through the maze pipe.
+
+**Symptoms:**
+- Down Arrow pressed but no ball appears to fall
+- Debug message: "Ball already active, ignoring release request"
+- Launcher logs show ball being caught at distance 0.0
+
+**Solution:**  
+1. Changed ball release position from (720, 400) to (720, 150) - positions ball ABOVE the launcher/maze entry point
+2. Modified Launcher detection to only catch balls coming from playfield (y > 350), not balls falling from queue (y < 200)
+
+**Code Changes:**
+```gdscript
+# BallQueue.gd - Changed release position
+# Before: var launcher_pos = Vector2(720, 400)
+# After: var maze_entry_pos = Vector2(720, 150)
+
+# Launcher.gd - Improved detection logic
+# Before: if distance < 80.0 and not ball.freeze:
+# After: if distance < 50.0 and not ball.freeze and ball.global_position.y > 350.0:
+```
+
+**Files:** `scripts/BallQueue.gd`, `scripts/Launcher.gd`  
+**Time:** 2025-01-18  
+**Status:** ✅ FIXED
+
+---
+
+## Summary (Updated)
+
+| Bug ID | Severity | Status | File | Lines |
+|--------|----------|--------|------|-------|
+| Bug 1 | Critical (Error) | ✅ FIXED | scripts/GameManager.gd | 118-126 |
+| Bug 2 | Critical (Error) | ✅ FIXED | scripts/GameManager.gd | 41, 54 |
+| Bug 3-9 | Warning | ⚠️ NON-CRITICAL | Multiple .tscn files | Various |
+| Bug 10 | Gameplay Bug | ✅ FIXED | scripts/Ball.gd | 69-97 |
+| Bug 11 | Visual Bug | ✅ FIXED | scenes/Main.tscn | 58-60, 12 |
+| Bug 12 | Critical (Parse Error) | ✅ FIXED | scenes/Main.tscn | 262, 266, 270, 274 |
+| Bug 13 | Warning | ✅ FIXED | scenes/Ball.tscn, Obstacle.tscn | 4 |
+| Bug 14 | Critical (Error) | ✅ FIXED | scripts/Ramp.gd | 80 |
+| Bug 15 | Critical (Error) | ✅ FIXED | scripts/MazePipeManager.gd | 167 |
+| Bug 16 | Critical (Gameplay) | ✅ FIXED | scripts/BallQueue.gd, Launcher.gd | Various |
+
+**Total Bugs Fixed:** 9 bugs (8 critical/gameplay, 1 visual)  
+**Total Warnings:** 7 (non-critical, handled gracefully by Godot)
+
+---
+
+**Last Updated:** 2025-01-18
 

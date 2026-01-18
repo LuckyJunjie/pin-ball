@@ -12,6 +12,9 @@ Main Scene (Main.tscn)
 ├── BallQueue (Node2D) - Ball queue management (top area)
 ├── Launcher (Node2D) - Ball launcher mechanism (below queue)
 │   └── LauncherRamp (Ramp) - Ramp to guide ball to playfield
+├── PipeGuide (Node2D) - Pipe guide system container
+│   ├── MazePipe (TileMapLayer) - Tile-based maze pipe system
+│   └── PipeBack (StaticBody2D) - Visual pipe back barrier
 ├── Playfield (Node2D) - Game area container
 │   ├── Background (ColorRect) - Visual background
 │   ├── Walls (Node2D) - Boundary walls
@@ -290,7 +293,42 @@ Each component is self-contained with:
 - `_ready()`: Setup collision shape and visual
 - `add_visual_label(text)`: Add debug label if debug mode enabled
 
-### 3.11 GameManager.gd (Updated)
+### 3.11 MazePipeManager.gd (New)
+
+**Purpose**: TileMap-based maze pipe system for guiding balls through channels
+
+**Responsibilities**:
+- Maze pipe tilemap configuration and management
+- Loading level-based maze layouts from JSON files
+- Programmatically creating default maze paths
+- Maze-aware collision detection (checking if position is in maze walls)
+
+**Key Methods**:
+- `load_maze_layout_by_name(layout_name: String)`: Load maze layout from JSON file
+- `load_maze_layout(level_data: Dictionary)`: Load maze from dictionary data
+- `create_default_maze_path()`: Create default maze path programmatically
+- `create_pipe_path(path_points: Array[Vector2i])`: Create pipe path from point array
+- `clear_maze()`: Clear all tiles from the maze
+- `is_position_in_maze(pos: Vector2) -> bool`: Check if position is in maze walls
+
+**Key Properties**:
+- `default_maze_layout: String`: Name of default layout to load ("level_1")
+- `tile_size: int`: Tile size in pixels (32)
+- `maze_layout_data: Dictionary`: Runtime maze data
+
+**Extension**: `TileMapLayer`
+
+**Signals**:
+- None (uses TileMapLayer signals if needed)
+
+**File**: `scripts/MazePipeManager.gd`
+
+**Scene Integration**:
+- Replaces `CurvedPipe` StaticBody2D in `Main.tscn`
+- Located in `PipeGuide/MazePipe` node
+- Uses `TileSet` resource: `assets/tilesets/pipe_maze_tileset.tres`
+
+### 3.12 GameManager.gd (Updated)
 
 **Purpose**: Central game state management (updated for new systems)
 
@@ -322,11 +360,16 @@ Player presses Down Arrow
   → GameManager.release_ball_from_queue()
   → BallQueue.release_next_ball()
   → Ball unfreezes, becomes active
-  → Ball positioned at queue location
-  → Ball falls naturally with gravity to launcher
+  → Ball positioned at maze entry (720, 150)
+  → Ball falls naturally with gravity through maze pipe
 
-Ball arrives at launcher
-  → Launcher.set_ball(ball)
+Ball falls through maze pipe
+  → Guided by tile walls (TileMapLayer collision)
+  → MazePipeManager manages pipe channels
+  → Ball exits maze into main playfield
+
+(Optional: Ball can arrive at launcher from playfield)
+  → Launcher.set_ball(ball) (if ball returns to launcher area)
   → Ball positioned at launcher position
   → Ball frozen at launcher
 

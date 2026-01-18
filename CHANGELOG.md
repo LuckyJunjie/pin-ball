@@ -5,6 +5,48 @@ All notable changes to the Pin-Ball project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - Maze Pipe System and Bug Fixes
+
+### Added
+- **Tile-Based Maze Pipe System**: Replaced CurvedPipe with TileMap-based maze pipes
+  - `MazePipeManager.gd`: Manages maze pipe tilemap configuration
+  - `assets/tilesets/pipe_maze_tileset.tres`: TileSet resource with pipe wall tiles
+  - `levels/maze_layouts/`: JSON-based level layout system for different maze designs
+  - Level-based maze layouts (extensible for future levels)
+  - Maze-aware obstacle spawning (obstacles avoid maze walls)
+- **Maze Layout System**: JSON format for level configuration
+  - Default layout: `level_1.json`
+  - Tile coordinate system for maze walls
+  - Support for different maze designs per level
+
+### Changed
+- **Pipe System**: Replaced script-based CurvedPipe with TileMapLayer-based maze pipes
+  - Ball now falls through maze channels guided by tile walls
+  - Maze walls use same collision layer as regular walls (layer 4)
+  - Better performance and easier level editing
+- **Ball Release Position**: Changed from (720, 400) to (720, 150)
+  - Ball starts above maze entry to fall naturally into maze pipe
+  - Prevents Launcher from immediately catching released balls
+- **Launcher Detection**: Improved to only catch balls from playfield
+  - Only catches balls below y=350 (coming from playfield)
+  - Ignores balls above y=350 (falling from queue)
+- **ObstacleSpawner**: Enhanced with maze-aware positioning
+  - Checks maze tiles before spawning obstacles
+  - Maintains random spawning while avoiding maze walls
+
+### Fixed
+- **Invalid Texture UIDs**: Fixed UID references in Ball.tscn and Obstacle.tscn
+- **Ternary Operator Type Error**: Fixed type incompatibility in Ramp.gd (line 80)
+- **TileSet.INVALID_SOURCE Error**: Replaced with `-1` check in MazePipeManager.gd
+- **Ball Release Issue**: Fixed Launcher catching ball immediately upon release
+- **Ball Physics State**: Improved ball state management in BallQueue.gd
+
+### Technical Details
+- Maze pipes use TileMapLayer with TileSet for collision
+- Physics material: friction 0.1, bounce 0.3 (low friction for smooth ball flow)
+- Maze path creates open channel (2 tiles wide) for ball to pass through
+- Ball release position (720, 150) aligns with maze entry channel
+
 ## [0.2.0] - Commercial Optimization and Sports Theme
 
 ### Added

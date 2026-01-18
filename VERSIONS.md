@@ -2,6 +2,87 @@
 
 This document provides detailed feature documentation for each version of the Pin-Ball game.
 
+## Version 1.0.0 - Maze Pipe System and Bug Fixes
+
+**Release Date:** 2025-01-18
+
+### Overview
+Version 1.0.0 introduces a tile-based maze pipe system replacing the script-based CurvedPipe, along with critical bug fixes that restore proper ball release and game flow.
+
+### Features
+
+#### Maze Pipe System
+- **TileMap-Based Maze Pipes**: Replaced CurvedPipe StaticBody2D with TileMapLayer-based maze system
+  - `MazePipeManager.gd`: Manages maze pipe tilemap configuration
+  - `assets/tilesets/pipe_maze_tileset.tres`: TileSet resource with pipe wall tiles
+  - Level-based maze layouts via JSON files in `levels/maze_layouts/`
+  - Default layout: `level_1.json` creates ball-guiding channels
+
+- **Maze Layout System**: JSON-based level configuration
+  - Tile coordinate system for maze walls
+  - Support for vertical, horizontal, corner, and junction tiles
+  - Extensible for multiple level designs
+  - Programmatic default path generation if JSON not found
+
+- **Maze-Aware Obstacle Spawning**: ObstacleSpawner enhanced with maze detection
+  - Checks if spawn position is inside maze walls
+  - Avoids spawning obstacles on maze tiles
+  - Maintains random spawning in open areas
+
+#### Bug Fixes
+- **Ball Release Issue**: Fixed Launcher catching ball immediately upon release
+  - Changed ball release position from (720, 400) to (720, 150)
+  - Launcher detection only catches balls from playfield (y > 350)
+  - Balls now fall naturally into maze pipe
+
+- **Texture UID Fixes**: Updated invalid UID references in scene files
+  - Ball.tscn: `uid://ball_texture` → `uid://crq2nyf046hpl`
+  - Obstacle.tscn: `uid://bumper_texture` → `uid://d1pxl2d7eeg41`
+
+- **Type Compatibility Fixes**:
+  - Fixed ternary operator type incompatibility in Ramp.gd
+  - Fixed TileSet.INVALID_SOURCE reference in MazePipeManager.gd
+
+### Technical Details
+
+#### New Scripts
+- `scripts/MazePipeManager.gd`: Extends TileMapLayer for maze management
+- `scripts/ObstacleSpawner.gd`: Enhanced with `is_position_in_maze()` method
+
+#### New Resources
+- `assets/tilesets/pipe_maze_tileset.tres`: TileSet with wall tiles
+- `levels/maze_layouts/level_1.json`: Default maze layout
+- `levels/maze_layouts/README.md`: Maze layout format documentation
+
+#### Modified Scripts
+- `scripts/BallQueue.gd`: Changed release position to (720, 150)
+- `scripts/Launcher.gd`: Improved detection to only catch balls from playfield
+- `scripts/ObstacleSpawner.gd`: Added maze-aware positioning
+
+#### Scene Changes
+- `scenes/Main.tscn`: Replaced CurvedPipe with MazePipe TileMapLayer
+- `scenes/Ball.tscn`: Fixed texture UID reference
+- `scenes/Obstacle.tscn`: Fixed texture UID reference
+
+#### Physics Configuration
+- Maze pipe walls: Collision layer 4 (Walls layer)
+- Physics material: friction 0.1, bounce 0.3 (low friction for smooth ball flow)
+- Tile size: 32 pixels
+- Maze channel width: 2-3 tiles wide for ball passage
+
+### Controls
+- **Down Arrow**: Release ball from queue (falls through maze pipe)
+- (Other controls unchanged from previous version)
+
+### Known Issues
+- None (all critical bugs fixed)
+
+### Future Enhancements
+- Multiple maze layouts for different levels
+- Procedural maze generation
+- Dynamic maze modifications (moving walls, gates)
+- Special maze tiles (speed boosts, direction changes)
+
 ## Version 0.0.1 - Initial Release
 
 **Release Date:** Initial baseline version

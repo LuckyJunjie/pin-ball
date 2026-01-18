@@ -33,7 +33,7 @@
 **Layer 4 - Walls**:
 - Bit: 2
 - Value: 4
-- Used by: Wall StaticBody2D
+- Used by: Wall StaticBody2D, MazePipe TileMapLayer
 
 **Layer 8 - Obstacles**:
 - Bit: 3
@@ -264,6 +264,12 @@ friction = 0.3  # Low friction
 - Bounce with 0.7 coefficient
 - Boundary enforcement
 
+**Ball-Maze Pipe**:
+- Physics collision via TileMapLayer (automatic)
+- Bounce with 0.3 coefficient (low bounce for smooth guidance)
+- Friction: 0.1 (very low for smooth sliding through channels)
+- Channel walls guide ball path through maze
+
 **Ball-Obstacle**:
 - Physics collision (automatic bounce)
 - Area2D detection (scoring trigger)
@@ -297,6 +303,12 @@ friction = 0.3  # Low friction
 
 **Walls**:
 - Bounce: 0.7 (good bounce)
+- Friction: 0.3 (medium)
+
+**Maze Pipe Walls** (TileMapLayer):
+- Bounce: 0.3 (low bounce for smooth guidance)
+- Friction: 0.1 (very low for smooth sliding)
+- Collision layer: 4 (Walls layer)
 - Friction: 0.3 (low, smooth)
 
 **Bumpers**:

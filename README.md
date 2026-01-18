@@ -35,9 +35,11 @@ The main scene (`scenes/Main.tscn`) will load automatically.
 ## Gameplay
 
 - Use the flippers to keep the ball in play
-- Hold Space or Down Arrow to charge the launcher, then release to launch
+- **Down Arrow**: Release ball from queue (falls through maze pipe)
+- Hold Space to charge the launcher, then release to launch (if ball arrives at launcher)
 - Charge longer for more launch power (visual meter shows charge level)
-- Ball queue system: 4 balls available, automatically advances when ball is lost
+- Ball queue system: 4 balls available, releases when Down Arrow pressed
+- **Maze Pipe System**: Ball falls through tile-based maze channels before reaching playfield
 - Score points by hitting obstacles:
   - **Bumpers**: 20 points (large, high bounce)
   - **Pegs**: 5 points (small, medium bounce)
@@ -63,9 +65,16 @@ pin-ball/
 │   ├── Launcher.gd        # Plunger launcher with charge mechanics
 │   ├── BallQueue.gd       # Ball queue management
 │   ├── Obstacle.gd        # Obstacle collision and scoring
-│   ├── ObstacleSpawner.gd # Random obstacle placement
+│   ├── ObstacleSpawner.gd # Random obstacle placement (maze-aware)
+│   ├── MazePipeManager.gd # TileMap-based maze pipe system
+│   ├── Ramp.gd            # Curved ramp system
 │   ├── release.sh         # Version release script
 │   └── build.sh           # Binary export script
+├── assets/tilesets/
+│   └── pipe_maze_tileset.tres  # TileSet resource for maze pipes
+├── levels/maze_layouts/
+│   ├── level_1.json       # Default maze layout
+│   └── README.md          # Maze layout format documentation
 ├── releases/              # Archived versions
 │   └── v0.1.1/
 │       ├── binaries/      # Exported binaries
@@ -94,7 +103,10 @@ pin-ball/
 - **Launcher**: Visual plunger with charge mechanics (500-1000 force range)
 - **Ball Queue**: Queue system with 4 visible standby balls
 - **Obstacles**: Random static obstacles (bumpers, pegs, walls) with scoring
-- **Game Manager**: Handles ball spawning, scoring, launcher, queue, and obstacles
+- **Maze Pipe System**: TileMapLayer-based maze pipes guiding ball through channels
+- **MazePipeManager**: Manages maze tilemap configuration and level layouts
+- **ObstacleSpawner**: Maze-aware obstacle placement (avoids maze walls)
+- **Game Manager**: Handles ball spawning, scoring, launcher, queue, obstacles, and maze
 
 ### Development Workflow
 
@@ -111,7 +123,7 @@ This workflow works well because:
 
 ## Version Control
 
-The project uses semantic versioning (MAJOR.MINOR.PATCH). Current version: **v0.1.1**
+The project uses semantic versioning (MAJOR.MINOR.PATCH). Current version: **v1.0.0**
 
 ### Version Files
 - `VERSION`: Current version identifier
