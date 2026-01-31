@@ -3,7 +3,7 @@ extends Node
 ## Global game settings and configuration singleton (Autoload)
 ## Manages game version, equipped items, and global settings
 
-var game_version: String = "v1.x"  # "v1.x" or "v2.0"
+var game_version: String = "v1.x"  # "v1.x", "v2.0", or "v3.0"
 var equipped_items: Dictionary = {
 	"ball": "ball_standard",
 	"flipper": "flipper_standard"
@@ -24,7 +24,7 @@ func _ready():
 		print("[GlobalGameSettings] Loaded equipped items: ", equipped_items)
 
 func set_game_version(version: String):
-	"""Set the game version (v1.x or v2.0)"""
+	"""Set the game version (v1.x, v2.0, or v3.0)"""
 	game_version = version
 	print("[GlobalGameSettings] Game version set to: ", game_version)
 

@@ -57,6 +57,11 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "Play (v2.0)"
 
+[node name="PlayV3Button" type="Button" parent="CanvasLayer/VBoxContainer/ButtonContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Play (v3.0)"
+
 [node name="ShopButton" type="Button" parent="CanvasLayer/VBoxContainer/ButtonContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 20

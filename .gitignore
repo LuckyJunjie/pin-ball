@@ -4,3 +4,7 @@
 
 # API Configuration (contains sensitive API keys)
 config/deepseek_api.json
+
+# macOS system files
+.DS_Store
+**/.DS_Store

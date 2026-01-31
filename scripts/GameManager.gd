@@ -3,6 +3,13 @@ extends Node2D
 ## Game Manager for pinball game
 ## Handles game state, scoring, ball spawning, and integrates launcher/queue systems
 
+# v3.0: Preload system classes
+const MultiballManager = preload("res://scripts/MultiballManager.gd")
+const ComboSystem = preload("res://scripts/ComboSystem.gd")
+const AnimationManager = preload("res://scripts/AnimationManager.gd")
+const ParticleManager = preload("res://scripts/ParticleManager.gd")
+const EnhancedParticleManager = preload("res://scripts/EnhancedParticleManager.gd")
+
 signal score_changed(new_score: int)
 
 @export var ball_scene: PackedScene
@@ -16,8 +23,18 @@ var is_paused: bool = false
 var ball_queue: Node2D = null
 var launcher: Node2D = null
 var sound_manager: Node = null
-var game_version: String = "v1.x"  # v1.x or v2.0
+var game_version: String = "v1.x"  # v1.x, v2.0, or v3.0
 var is_v2_mode: bool = false
+var is_v3_mode: bool = false
+
+# v3.0: New systems
+var multiball_manager: Node = null
+var combo_system: Node = null
+var animation_manager: Node = null
+var current_multiplier: float = 1.0
+var multiplier_timer: float = 0.0
+var obstacle_hit_count: int = 0
+var skill_shots: Array[Node] = []
 
 func _ready():
 	if debug_mode:
@@ -32,9 +49,10 @@ func _ready():
 	var global_settings = get_node_or_null("/root/GlobalGameSettings")
 	if global_settings:
 		game_version = global_settings.game_version
-		is_v2_mode = (game_version == "v2.0")
+		is_v2_mode = (game_version == "v2.0" or game_version == "v3.0")
+		is_v3_mode = (game_version == "v3.0")
 		if debug_mode:
-			print("[GameManager] Game version: ", game_version, " (v2.0 mode: ", is_v2_mode, ")")
+			print("[GameManager] Game version: ", game_version, " (v2.0 mode: ", is_v2_mode, ", v3.0 mode: ", is_v3_mode, ")")
 	
 	# Find ball queue and launcher in scene
 	if debug_mode:
@@ -102,6 +120,10 @@ func _ready():
 	elif not sound_manager and debug_mode:
 		print("[GameManager] SoundManager not found - sounds will be disabled")
 	
+	# v3.0: Initialize new systems only if v3.0 mode (defer to avoid issues)
+	if is_v3_mode:
+		call_deferred("_initialize_v3_systems")
+	
 	# Check viewport info
 	if debug_mode:
 		var viewport = get_viewport()
@@ -124,6 +146,56 @@ func _ready():
 	# prepare_next_ball()  # Commented out - wait for ball release
 	if debug_mode:
 		print("[GameManager] _ready() completed, waiting for ball release")
+
+func _initialize_v3_systems():
+	"""v3.0: Initialize new game systems"""
+	# Create multiball manager
+	multiball_manager = MultiballManager.new()
+	multiball_manager.name = "MultiballManager"
+	add_child(multiball_manager)
+	if multiball_manager.has_signal("multiball_activated"):
+		multiball_manager.multiball_activated.connect(_on_multiball_activated)
+	if multiball_manager.has_signal("multiball_ended"):
+		multiball_manager.multiball_ended.connect(_on_multiball_ended)
+	
+	# Create combo system
+	combo_system = ComboSystem.new()
+	combo_system.name = "ComboSystem"
+	add_child(combo_system)
+	if combo_system.has_signal("combo_increased"):
+		combo_system.combo_increased.connect(_on_combo_increased)
+	
+	# Create animation manager
+	animation_manager = AnimationManager.new()
+	animation_manager.name = "AnimationManager"
+	add_child(animation_manager)
+	
+	# Create enhanced particle manager (uses EnhancedParticleManager if available)
+	var particle_manager = EnhancedParticleManager.new()
+	particle_manager.name = "ParticleManager"
+	add_child(particle_manager)
+	
+	# Find and connect skill shots (may not exist yet, will be found when ball launches)
+	# Connect skill shot signals when they're found
+	_connect_skill_shot_signals()
+	
+	if debug_mode:
+		print("[GameManager] v3.0 systems initialized")
+
+func _connect_skill_shot_signals():
+	"""v3.0: Connect skill shot signals to GameManager"""
+	# Find all skill shots in the scene
+	skill_shots = get_tree().get_nodes_in_group("skill_shots")
+	
+	for skill_shot in skill_shots:
+		if skill_shot and skill_shot.has_signal("skill_shot_hit"):
+			if not skill_shot.skill_shot_hit.is_connected(_on_skill_shot_hit):
+				skill_shot.skill_shot_hit.connect(_on_skill_shot_hit)
+				if debug_mode:
+					print("[GameManager] Connected skill shot signal: ", skill_shot)
+	
+	if debug_mode:
+		print("[GameManager] Connected ", skill_shots.size(), " skill shot(s)")
 
 func _input(event):
 	# Only process key events (ignore mouse movement, etc.)
@@ -236,6 +308,15 @@ func _on_ball_launched(_force: Vector2):
 		print("[GameManager] Ball launched")
 	play_sound("ball_launch")
 	# Ball is now in playfield
+	
+	# v3.0: Activate skill shots
+	if skill_shots.is_empty():
+		skill_shots = get_tree().get_nodes_in_group("skill_shots")
+		# Connect signals if not already connected
+		_connect_skill_shot_signals()
+	for skill_shot in skill_shots:
+		if skill_shot and skill_shot.has_method("activate"):
+			skill_shot.activate()
 
 func _on_ball_lost():
 	"""Handle when ball is lost"""
@@ -321,11 +402,37 @@ func connect_hold_signals():
 func _on_obstacle_hit(points: int):
 	"""Handle obstacle hit and award points"""
 	play_sound("obstacle_hit")
-	add_score(points)
+	
+	# v3.0: Register combo hit
+	if combo_system:
+		combo_system.register_hit()
+	
+	# v3.0: Apply multipliers
+	var final_points = points
+	if multiball_manager and multiball_manager.is_multiball_active():
+		final_points = int(final_points * multiball_manager.get_scoring_multiplier())
+	if combo_system:
+		final_points = int(final_points * combo_system.get_combo_multiplier())
+	if current_multiplier > 1.0:
+		final_points = int(final_points * current_multiplier)
+	
+	add_score(final_points)
+	
+	# v3.0: Update multiplier system
+	obstacle_hit_count += 1
+	_update_multiplier()
+	
+	# v3.0: Animate score popup
+	if animation_manager and current_ball:
+		animation_manager.animate_score_popup(
+			current_ball.global_position + Vector2(0, -30),
+			final_points,
+			Color.YELLOW if current_multiplier > 1.0 else Color.WHITE
+		)
 	
 	# v2.0: Award coins for obstacle hits (1 coin per 100 points)
 	if is_v2_mode:
-		var coins_to_award = points / 100
+		var coins_to_award = final_points / 100
 		if coins_to_award > 0:
 			var currency_mgr = get_node_or_null("/root/CurrencyManager")
 			if currency_mgr:
@@ -407,3 +514,80 @@ func toggle_pause():
 	"""Toggle game pause state"""
 	is_paused = !is_paused
 	get_tree().paused = is_paused
+
+# v3.0: New methods for v3.0 systems
+
+func _on_skill_shot_hit(points: int):
+	"""Handle skill shot hit"""
+	if debug_mode:
+		print("[GameManager] Skill shot hit! ", points, " points")
+	
+	# Apply multipliers
+	var final_points = points
+	if multiball_manager and multiball_manager.is_multiball_active():
+		final_points = int(final_points * multiball_manager.get_scoring_multiplier())
+	if current_multiplier > 1.0:
+		final_points = int(final_points * current_multiplier)
+	
+	add_score(final_points)
+	
+	# Animate score popup
+	if animation_manager and current_ball:
+		animation_manager.animate_score_popup(
+			current_ball.global_position + Vector2(0, -30),
+			final_points,
+			Color.CYAN
+		)
+	
+	play_sound("skill_shot")
+
+func _on_multiball_activated(ball_count: int):
+	"""Handle multiball activation"""
+	if debug_mode:
+		print("[GameManager] Multiball activated with ", ball_count, " balls")
+	
+	# Screen shake effect
+	var camera = get_viewport().get_camera_2d()
+	if camera and animation_manager:
+		animation_manager.screen_shake(camera, 10.0, 0.5)
+
+func _on_multiball_ended():
+	"""Handle multiball end"""
+	if debug_mode:
+		print("[GameManager] Multiball ended")
+
+func _on_combo_increased(combo_count: int, multiplier: float):
+	"""Handle combo increase"""
+	if debug_mode:
+		print("[GameManager] Combo: ", combo_count, " hits, multiplier: ", multiplier, "x")
+
+func _update_multiplier():
+	"""Update dynamic multiplier based on obstacle hits"""
+	# Increase multiplier every 5 hits
+	if obstacle_hit_count % 5 == 0:
+		current_multiplier += 0.5
+		if current_multiplier > 10.0:
+			current_multiplier = 10.0
+		
+		multiplier_timer = 10.0  # Reset decay timer
+		
+		if debug_mode:
+			print("[GameManager] Multiplier increased to ", current_multiplier, "x")
+		
+		# Visual feedback
+		if animation_manager:
+			var ui = get_tree().get_first_node_in_group("ui")
+			if ui:
+				var multiplier_label = ui.get_node_or_null("MultiplierLabel")
+				if multiplier_label:
+					animation_manager.animate_component_highlight(multiplier_label, Color.GREEN, 0.3)
+
+func _process(_delta):
+	"""v3.0: Process multiplier decay"""
+	if current_multiplier > 1.0:
+		multiplier_timer -= _delta
+		if multiplier_timer <= 0.0:
+			current_multiplier = max(1.0, current_multiplier - 0.5)
+			multiplier_timer = 10.0
+			if debug_mode:
+				print("[GameManager] Multiplier decayed to ", current_multiplier, "x")

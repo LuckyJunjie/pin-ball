@@ -9,14 +9,24 @@ signal obstacle_hit(points: int)
 @export var points_value: int = 10
 @export var bounce_strength: float = 0.9
 
+# v3.0: Enhanced bumper properties
+@export var is_bumper: bool = false  # True for bumpers (basketball hoops)
+@export var bumping_strength: float = 20.0  # Active force application (15-25)
+@export var blinking_enabled: bool = true  # Enable blinking behavior
+@export var blink_speed: float = 2.0  # Blink speed multiplier
+
 func set_obstacle_type(value: String):
 	"""Setter for obstacle_type that updates sprite when changed"""
 	obstacle_type = value
 	if is_inside_tree():
 		update_sprite()
+		# v3.0: Set is_bumper based on type
+		is_bumper = (obstacle_type == "basketball" or obstacle_type == "bumper")
 
 var hit_cooldown: float = 0.0
 var cooldown_time: float = 0.5  # Prevent multiple hits in quick succession
+var is_lit: bool = true  # v3.0: Visual state (lit vs dimmed)
+var blink_timer: float = 0.0  # v3.0: Blink animation timer
 
 func _get_debug_mode() -> bool:
 	"""Helper to get debug mode from GameManager"""
@@ -43,6 +53,10 @@ func _ready():
 	
 	# Load sprite - will be called again if obstacle_type changes
 	update_sprite()
+	
+	# v3.0: Add glow effect for bumpers
+	if is_bumper:
+		_add_glow_effect()
 	
 	# Add Area2D for collision detection
 	var area = Area2D.new()
@@ -162,6 +176,23 @@ func update_sprite():
 func _process(delta):
 	if hit_cooldown > 0.0:
 		hit_cooldown -= delta
+		# v3.0: Dimmed state during cooldown
+		is_lit = false
+	else:
+		# v3.0: Lit state when ready
+		is_lit = true
+	
+	# v3.0: Blinking behavior for bumpers
+	if is_bumper and blinking_enabled and is_lit:
+		blink_timer += delta * blink_speed
+		var alpha = 0.7 + 0.3 * sin(blink_timer * 5.0)
+		modulate = Color(1.0, 1.0, 1.0, alpha)
+	elif not is_lit:
+		# Dimmed during cooldown
+		modulate = Color(0.5, 0.5, 0.5, 0.7)
+	else:
+		# Normal state
+		modulate = Color(1.0, 1.0, 1.0, 1.0)
 
 func _on_body_entered(body: Node2D):
 	"""Called when a body enters the obstacle detection area"""
@@ -170,8 +201,113 @@ func _on_body_entered(body: Node2D):
 	
 	if body is RigidBody2D and body.collision_layer == 1:  # Ball layer
 		hit_cooldown = cooldown_time
+		
+		# v3.0: Apply bumping force for bumpers
+		if is_bumper:
+			_apply_bumping_force(body)
+		
+		# v3.0: Play hit effect
+		_play_hit_effect(body)
+		
 		obstacle_hit.emit(points_value)
 		# Visual feedback could be added here (flash, animation, etc.)
+
+func _apply_bumping_force(ball: RigidBody2D):
+	"""v3.0: Apply active bumping force to ball"""
+	if not ball:
+		return
+	
+	# Calculate direction away from obstacle center
+	var direction = (ball.global_position - global_position).normalized()
+	if direction.length() < 0.1:
+		direction = Vector2(randf_range(-1, 1), randf_range(-1, 1)).normalized()
+	
+	# Apply impulse
+	var force = direction * bumping_strength
+	ball.apply_impulse(force)
+	
+	if _get_debug_mode():
+		print("[Obstacle] Applied bumping force: ", force)
+
+func _play_hit_effect(ball: RigidBody2D):
+	"""v3.0: Play visual/audio effect on hit"""
+	# Flash effect
+	var tween = create_tween()
+	var original_modulate = modulate
+	tween.tween_property(self, "modulate", Color(1.0, 1.0, 0.0, 1.0), 0.1)  # Yellow flash
+	tween.tween_property(self, "modulate", original_modulate, 0.2)
+	
+	# Play particle effect (if particle system exists)
+	_spawn_hit_particles(ball.global_position)
+	
+	# v3.0: Add screen shake for big hits (bumpers)
+	if is_bumper:
+		var camera = get_tree().get_first_node_in_group("camera")
+		if not camera:
+			camera = get_tree().get_first_node_in_group("Camera2D")
+		if camera:
+			var anim_mgr = get_tree().get_first_node_in_group("animation_manager")
+			if anim_mgr and anim_mgr.has_method("screen_shake"):
+				anim_mgr.screen_shake(camera, 8.0, 0.2)  # Strong shake for bumpers
+	
+	# Play sound with pitch variation
+	var sound_manager = get_tree().get_first_node_in_group("sound_manager")
+	if sound_manager:
+		if sound_manager.has_method("play_sound_with_pitch"):
+			var pitch = randf_range(0.9, 1.1)
+			sound_manager.play_sound_with_pitch("obstacle_hit", pitch)
+		elif sound_manager.has_method("play_sound"):
+			sound_manager.play_sound("obstacle_hit")
+
+func _spawn_hit_particles(position: Vector2):
+	"""v3.0: Spawn particle effect on hit"""
+	# Check if enhanced particle manager exists
+	var particle_manager = get_tree().get_first_node_in_group("particle_manager")
+	if not particle_manager:
+		# Try to find in GameManager
+		var game_manager = get_tree().get_first_node_in_group("game_manager")
+		if game_manager:
+			particle_manager = game_manager.get_node_or_null("ParticleManager")
+			# Try enhanced particle manager
+			if not particle_manager:
+				particle_manager = game_manager.get_node_or_null("EnhancedParticleManager")
+	
+	# Use enhanced particles if available, fallback to base
+	if particle_manager:
+		if particle_manager.has_method("spawn_bumper_hit"):
+			# Enhanced version with color
+			var color = Color(1.0, 0.8, 0.0, 1.0)  # Orange/yellow
+			if is_bumper:
+				match obstacle_type:
+					"basketball", "bumper":
+						color = Color(1.0, 0.8, 0.0, 1.0)  # Orange
+					_:
+						color = Color(0.0, 1.0, 1.0, 1.0)  # Cyan
+			particle_manager.spawn_bumper_hit(position, color)
+		elif particle_manager.has_method("spawn_bumper_hit"):
+			# Base version
+			particle_manager.spawn_bumper_hit(position)
+
+func _add_glow_effect():
+	"""v3.0: Add glow effect to bumper"""
+	var glow_script = load("res://scripts/GlowEffect.gd")
+	if glow_script:
+		var glow = Node2D.new()
+		glow.set_script(glow_script)
+		
+		# Set glow color based on obstacle type
+		match obstacle_type:
+			"basketball", "bumper":
+				glow.glow_color = Color(1.0, 0.8, 0.0, 1.0)  # Orange/yellow
+			_:
+				glow.glow_color = Color(0.0, 1.0, 1.0, 1.0)  # Cyan default
+		
+		glow.glow_size = 1.5
+		glow.glow_intensity = 1.2
+		glow.pulse_enabled = true
+		glow.pulse_speed = blink_speed
+		
+		add_child(glow)
 
 func add_visual_label(text: String):
 	"""Add a visual label to identify this object"""

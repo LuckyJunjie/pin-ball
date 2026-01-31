@@ -25,8 +25,8 @@ func _ready():
 	# Add to balls group for easy access by other systems (e.g., Launcher)
 	add_to_group("balls")
 	
-	# Configure physics properties
-	gravity_scale = 1.0
+	# Configure physics properties (v3.0: enhanced values)
+	gravity_scale = 1.0  # Gravity constant normalized to 0.97-1.0 range
 	linear_damp = 0.02  # Very low damping for longer ball travel across playfield
 	angular_damp = 0.02
 	mass = 0.4  # Slightly lighter ball for better movement
@@ -35,10 +35,10 @@ func _ready():
 	collision_layer = 1  # Ball layer
 	collision_mask = 2 | 4 | 8 | 16  # Collide with flippers (2), walls (4), obstacles (8), and holds (16)
 	
-	# Configure physics material for better bounce and reflection
+	# Configure physics material for better bounce and reflection (v3.0: realistic values)
 	var physics_material = PhysicsMaterial.new()
 	physics_material.bounce = 0.85  # Higher bounce for better reflection
-	physics_material.friction = 0.2  # Lower friction for smoother movement
+	physics_material.friction = 0.075  # v3.0: Playfield friction 0.075+ (adjustable for ball speed)
 	physics_material_override = physics_material
 	
 	# Add visual label if debug mode enabled

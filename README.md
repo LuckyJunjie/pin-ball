@@ -175,6 +175,18 @@ See Godot docs for export templates: https://docs.godotengine.org/en/stable/depl
 - Project icon: `icon.svg` included in repo.
 - Add credits here if you include third-party art, sounds, or assets.
 
+### Downloading Free Assets
+
+This project includes scripts and guides for downloading free, open-source assets:
+
+- **Asset Download Guide**: See `docs/assets/ASSET_DOWNLOAD_GUIDE.md` for comprehensive instructions
+- **Download Script**: Run `python3 scripts/download_assets.py` to download assets (requires manual downloads for most sources)
+- **Asset Sources**: 
+  - Sounds: Freesound.org, OpenGameArt.org
+  - Sprites: OpenGameArt.org, Kenney.nl, itch.io
+
+For detailed information on finding and importing free assets, see `docs/assets/ASSET_DOWNLOAD_GUIDE.md`.
+
 ## Contributing
 
 - File issues or PRs via the repository. Keep changes focused and include screenshots or short videos for visual fixes.

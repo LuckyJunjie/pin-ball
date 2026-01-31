@@ -35,9 +35,17 @@ For commercial-quality sound effects (free for commercial use), check:
 
 - **freesound.org** - Search for CC0 or CC-BY licensed sounds
   - Search terms: "pinball", "click", "bounce", "launch", "success"
+  - Sound packs: https://freesound.org/people/GameBoy/packs/36080/
 - **opengameart.org** - Free game art and sounds
 - **kenney.nl/assets** - Free game assets
 - **itch.io** - Free asset packs
+
+**📖 For detailed download instructions and direct links, see: `docs/assets/ASSET_DOWNLOAD_GUIDE.md`.**
+
+**💻 Use the download script:**
+```bash
+python3 scripts/download_assets.py
+```
 
 ## Note
 The SoundManager will gracefully handle missing sound files by not playing anything if the files don't exist. 

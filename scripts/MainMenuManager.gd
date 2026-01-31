@@ -5,6 +5,7 @@ extends Node
 
 var play_v1_button: Button = null
 var play_v2_button: Button = null
+var play_v3_button: Button = null
 var shop_button: Button = null
 var settings_button: Button = null
 var currency_display: HBoxContainer = null
@@ -23,6 +24,7 @@ func _ready():
 	# Find buttons using parent (MainMenu) as base
 	play_v1_button = main_menu.get_node_or_null("CanvasLayer/VBoxContainer/ButtonContainer/PlayV1Button")
 	play_v2_button = main_menu.get_node_or_null("CanvasLayer/VBoxContainer/ButtonContainer/PlayV2Button")
+	play_v3_button = main_menu.get_node_or_null("CanvasLayer/VBoxContainer/ButtonContainer/PlayV3Button")
 	shop_button = main_menu.get_node_or_null("CanvasLayer/VBoxContainer/ButtonContainer/ShopButton")
 	settings_button = main_menu.get_node_or_null("CanvasLayer/VBoxContainer/ButtonContainer/SettingsButton")
 	currency_display = main_menu.get_node_or_null("CanvasLayer/VBoxContainer/HeaderContainer/CurrencyDisplay")
@@ -36,6 +38,10 @@ func _ready():
 		print("[MainMenuManager] PlayV2Button found")
 	else:
 		print("[MainMenuManager] ERROR: PlayV2Button NOT found!")
+	if play_v3_button:
+		print("[MainMenuManager] PlayV3Button found")
+	else:
+		print("[MainMenuManager] ERROR: PlayV3Button NOT found!")
 	
 	# Connect button signals
 	if play_v1_button:
@@ -44,6 +50,9 @@ func _ready():
 	if play_v2_button:
 		play_v2_button.pressed.connect(_on_play_v2_pressed)
 		print("[MainMenuManager] Connected PlayV2Button signal")
+	if play_v3_button:
+		play_v3_button.pressed.connect(_on_play_v3_pressed)
+		print("[MainMenuManager] Connected PlayV3Button signal")
 	if shop_button:
 		shop_button.pressed.connect(_on_shop_pressed)
 		print("[MainMenuManager] Connected ShopButton signal")
@@ -75,6 +84,18 @@ func _on_play_v2_pressed():
 		global_settings.set_game_version("v2.0")
 	
 	# Initialize default items for v2.0 if first time
+	_initialize_v2_defaults()
+	
+	get_tree().change_scene_to_file("res://scenes/Main.tscn")
+
+func _on_play_v3_pressed():
+	"""Start game in v3.0 mode"""
+	print("[MainMenuManager] Starting game in v3.0 mode")
+	var global_settings = get_node_or_null("/root/GlobalGameSettings")
+	if global_settings:
+		global_settings.set_game_version("v3.0")
+	
+	# Initialize default items for v3.0 if first time (v3.0 includes v2.0 features)
 	_initialize_v2_defaults()
 	
 	get_tree().change_scene_to_file("res://scenes/Main.tscn")

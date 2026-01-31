@@ -69,10 +69,17 @@ For commercial-quality graphics, download from these free sources:
 ## Replacing Assets
 
 To replace an asset:
-1. Download the new asset
+1. Download the new asset (see `docs/assets/ASSET_DOWNLOAD_GUIDE.md` for sources)
 2. Place it in `assets/sprites/` with the same filename
 3. Godot will automatically reimport when you open the project
 4. Or use "Reimport" in Godot editor for the file
+
+**📖 For detailed download instructions and direct links, see: `docs/assets/ASSET_DOWNLOAD_GUIDE.md`.**
+
+**💻 Use the download script:**
+```bash
+python3 scripts/download_assets.py
+```
 
 ## Notes
 

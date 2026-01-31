@@ -8,8 +8,17 @@ extends RigidBody2D
 @export var pressed_angle: float = -10.0  # When pressed, tip moves toward center (left: -10°, right: 10°)
 @export var rotation_speed: float = 20.0
 
+# v3.0: Enhanced physics properties from vpinball
+@export var flipper_strength: float = 2200.0  # 1200-1800 (EM) or 2200-2800 (modern)
+@export var elasticity: float = 0.7  # 0.55-0.8
+@export var elasticity_falloff: float = 0.3  # 0.1-0.43 (new property for realistic flipper feel)
+@export var flipper_friction: float = 0.3  # 0.1-0.6
+@export var return_strength: float = 0.058  # Smooth return
+@export var coil_up_ramp: float = 3.0  # 2.4-3.5 (gradual power increase)
+
 var is_pressed: bool = false
 var target_angle: float = 0.0
+var angle_diff: float = 0.0  # v3.0: Track angle difference for force calculation
 
 func _get_debug_mode() -> bool:
 	"""Helper to get debug mode from GameManager"""
@@ -29,6 +38,9 @@ func _ready():
 	collision_layer = 2  # Flipper layer
 	collision_mask = 1  # Collide with ball
 	mass = 1.0
+	
+	# v3.0: Add glow effect to flippers
+	_add_glow_effect()
 	
 	# Adjust angles based on side for \ / shape pointing toward center
 	# Left flipper: points up-right like \ (positive angle at rest)
@@ -55,10 +67,10 @@ func _ready():
 	target_angle = rest_angle
 	rotation_degrees = rest_angle
 	
-	# Configure physics material for bounce
+	# Configure physics material for bounce (v3.0: enhanced values)
 	var physics_material = PhysicsMaterial.new()
-	physics_material.bounce = 0.6
-	physics_material.friction = 0.5
+	physics_material.bounce = elasticity
+	physics_material.friction = flipper_friction
 	physics_material_override = physics_material
 	
 	# Add visual label if debug mode enabled
@@ -94,17 +106,71 @@ func _physics_process(delta):
 		is_pressed = false
 	
 	# Smoothly rotate towards target angle (only rotate when needed)
-	var angle_diff = target_angle - rotation_degrees
+	# v3.0: Apply coil up ramp for gradual power increase
+	angle_diff = target_angle - rotation_degrees
 	if abs(angle_diff) > 0.1:
 		var rotation_dir = sign(angle_diff)
-		var rotation_amount = min(abs(angle_diff), rotation_speed * delta * 60.0)
+		# Apply coil up ramp: faster at start, slower as approaching target
+		var ramp_factor = 1.0 + (coil_up_ramp - 1.0) * (1.0 - abs(angle_diff) / abs(pressed_angle - rest_angle))
+		var rotation_amount = min(abs(angle_diff), rotation_speed * delta * 60.0 * ramp_factor)
 		rotation_degrees += rotation_dir * rotation_amount
+		
+		# v3.0: Apply force to ball when flipper is moving (realistic flipper physics)
+		if is_pressed:
+			_apply_flipper_force(delta)
 
 func _play_flipper_sound():
 	"""Play flipper click sound"""
 	var sound_manager = get_tree().get_first_node_in_group("sound_manager")
 	if sound_manager and sound_manager.has_method("play_sound"):
 		sound_manager.play_sound("flipper_click")
+
+func _apply_flipper_force(delta: float):
+	"""v3.0: Apply realistic flipper force to ball when flipper is moving"""
+	# Get collision shape
+	var collision_shape = get_node_or_null("CollisionShape2D")
+	if not collision_shape or not collision_shape.shape:
+		return
+	
+	# Get all bodies in contact with flipper
+	var space_state = get_world_2d().direct_space_state
+	var query = PhysicsShapeQueryParameters2D.new()
+	query.shape = collision_shape.shape
+	query.transform = global_transform
+	query.collision_mask = 1  # Ball layer
+	query.exclude = [self]
+	
+	var results = space_state.intersect_shape(query)
+	for result in results:
+		var body = result.collider
+		if body is RigidBody2D and body.collision_layer == 1:  # Ball
+			# Calculate force direction (perpendicular to flipper surface)
+			var flipper_direction = Vector2(cos(rotation), sin(rotation))
+			var force_direction = Vector2(-flipper_direction.y, flipper_direction.x)  # Perpendicular
+			
+			# Apply force based on flipper strength and elasticity falloff
+			var angle_range = abs(pressed_angle - rest_angle)
+			if angle_range > 0.1:
+				var distance_factor = 1.0 - (abs(angle_diff) / angle_range)
+				var falloff_factor = 1.0 - (elasticity_falloff * (1.0 - distance_factor))
+				var force_magnitude = flipper_strength * falloff_factor * delta
+				body.apply_impulse(force_direction * force_magnitude)
+
+func _add_glow_effect():
+	"""v3.0: Add glow effect to flipper"""
+	var glow_script = load("res://scripts/GlowEffect.gd")
+	if glow_script:
+		var glow = Node2D.new()
+		glow.set_script(glow_script)
+		glow.glow_color = Color(0.2, 0.6, 1.0, 1.0)  # Blue glow for flippers
+		glow.glow_size = 1.2
+		glow.glow_intensity = 1.0
+		glow.pulse_enabled = false  # No pulse, just steady glow
+		add_child(glow)
+		
+		# Update glow intensity when pressed
+		if is_pressed:
+			glow.set_glow_intensity(1.5)  # Brighter when active
 
 func add_visual_label(text: String):
 	"""Add a visual label to identify this object"""
