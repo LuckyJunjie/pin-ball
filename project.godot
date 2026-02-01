@@ -22,6 +22,7 @@ CurrencyManager="*res://scripts/CurrencyManager.gd"
 SaveManager="*res://scripts/SaveManager.gd"
 GameManagerV4="*res://scripts/v4/GameManagerV4.gd"
 BackboxManagerV4="*res://scripts/v4/BackboxManagerV4.gd"
+BallPoolV4="*res://scripts/v4/BallPoolV4.gd"
 
 [input]
 

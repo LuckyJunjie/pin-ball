@@ -1,4 +1,4 @@
-[gd_scene load_steps=30 format=3]
+[gd_scene load_steps=24 format=3]
 
 [ext_resource type="Script" path="res://scripts/v4/MainV4.gd" id="1_main_script"]
 [ext_resource type="Script" path="res://scripts/v4/RampV4.gd" id="13_ramp_script"]
@@ -12,11 +12,7 @@
 [ext_resource type="Script" path="res://scripts/v4/UIV4.gd" id="8_ui_script"]
 [ext_resource type="Script" path="res://scripts/v4/SkillShotV4.gd" id="9_skillshot_script"]
 [ext_resource type="Script" uid="uid://xpynup2qppu3" path="res://scripts/SoundManager.gd" id="10_sound_script"]
-[ext_resource type="PackedScene" path="res://scenes/zones/AndroidAcres/AndroidAcres.tscn" id="14_android_acres"]
-[ext_resource type="PackedScene" path="res://scenes/zones/DinoDesert/DinoDesert.tscn" id="15_dino_desert"]
-[ext_resource type="PackedScene" path="res://scenes/zones/FlutterForest/FlutterForest.tscn" id="16_flutter_forest"]
-[ext_resource type="PackedScene" path="res://scenes/zones/SparkyScorch/SparkyScorch.tscn" id="17_sparky_scorch"]
-[ext_resource type="PackedScene" path="res://scenes/zones/GoogleGallery/GoogleGallery.tscn" id="18_google_gallery"]
+[ext_resource type="PackedScene" path="res://scenes/Obstacle.tscn" id="11_obstacle_scene"]
 
 [sub_resource type="RectangleShape2D" id="Rect_drain"]
 size = Vector2(100, 30)
@@ -136,22 +132,27 @@ script = ExtResource("13_ramp_script")
 position = Vector2(180, 180)
 shape = SubResource("Rect_ramp")
 
-[node name="Zones" type="Node2D" parent="Playfield"]
+[node name="Obstacles" type="Node2D" parent="Playfield"]
 
-[node name="AndroidAcres" parent="Playfield/Zones" instance=ExtResource("14_android_acres")]
-position = Vector2(200, 150)  # TODO: Convert from Flutter coordinates
+[node name="Bumper1" parent="Playfield/Obstacles" instance=ExtResource("11_obstacle_scene")]
+position = Vector2(280, 220)
+points_value = 20000
 
-[node name="DinoDesert" parent="Playfield/Zones" instance=ExtResource("15_dino_desert")]
-position = Vector2(600, 150)  # TODO: Convert from Flutter coordinates
+[node name="Bumper2" parent="Playfield/Obstacles" instance=ExtResource("11_obstacle_scene")]
+position = Vector2(520, 220)
+points_value = 20000
 
-[node name="FlutterForest" parent="Playfield/Zones" instance=ExtResource("16_flutter_forest")]
-position = Vector2(200, 400)  # TODO: Convert from Flutter coordinates
+[node name="Bumper3" parent="Playfield/Obstacles" instance=ExtResource("11_obstacle_scene")]
+position = Vector2(340, 340)
+points_value = 20000
 
-[node name="SparkyScorch" parent="Playfield/Zones" instance=ExtResource("17_sparky_scorch")]
-position = Vector2(600, 400)  # TODO: Convert from Flutter coordinates
+[node name="Bumper4" parent="Playfield/Obstacles" instance=ExtResource("11_obstacle_scene")]
+position = Vector2(460, 340)
+points_value = 20000
 
-[node name="GoogleGallery" parent="Playfield/Zones" instance=ExtResource("18_google_gallery")]
-position = Vector2(400, 250)  # TODO: Convert from Flutter coordinates
+[node name="Bumper5" parent="Playfield/Obstacles" instance=ExtResource("11_obstacle_scene")]
+position = Vector2(400, 280)
+points_value = 200000
 
 [node name="SoundManager" type="Node" parent="."]
 script = ExtResource("10_sound_script")
@@ -160,17 +161,17 @@ script = ExtResource("10_sound_script")
 
 [node name="Launcher" parent="." instance=ExtResource("4_launcher_scene")]
 z_index = 1
-position = Vector2(400, 550)  # TODO: Convert from Flutter coordinates
+position = Vector2(605, 518.5)
 
 [node name="Flippers" type="Node2D" parent="."]
 
 [node name="FlipperLeft" parent="Flippers" instance=ExtResource("3_flipper_scene")]
-position = Vector2(300, 550)  # TODO: Convert from Flutter coordinates (-18.65, 43.6)
+position = Vector2(339.75, 518)
 rest_angle = 30.0
 pressed_angle = -10.0
 
 [node name="FlipperRight" parent="Flippers" instance=ExtResource("3_flipper_scene")]
-position = Vector2(500, 550)  # TODO: Convert from Flutter coordinates (4.75, 43.6)
+position = Vector2(424, 518)
 flipper_side = "right"
 rest_angle = -30.0
 pressed_angle = 10.0
