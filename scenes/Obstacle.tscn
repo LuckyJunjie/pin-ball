@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3 uid="uid://obstacle_scene_123"]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/Obstacle.gd" id="1_obstacle_script"]
 [ext_resource type="Texture2D" uid="uid://d1pxl2d7eeg41" path="res://assets/sprites/bumper.png" id="2_bumper_texture"]

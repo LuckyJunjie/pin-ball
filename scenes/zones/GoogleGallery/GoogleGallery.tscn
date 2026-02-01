@@ -1,0 +1,38 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/v4/zones/GoogleGalleryV4.gd" id="1_google_gallery_script"]
+
+[node name="GoogleGallery" type="Node2D"]
+script = ExtResource("1_google_gallery_script")
+
+[node name="Letter1" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Letter1"]
+
+[node name="Letter2" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Letter2"]
+
+[node name="Letter3" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Letter3"]
+
+[node name="Letter4" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Letter4"]
+
+[node name="Letter5" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Letter5"]
+
+[node name="Letter6" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Letter6"]
+
+[node name="RolloverLeft" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RolloverLeft"]
+
+[node name="RolloverRight" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RolloverRight"]

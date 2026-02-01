@@ -1,0 +1,22 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/v4/zones/DinoDesertV4.gd" id="1_dino_desert_script"]
+
+[node name="DinoDesert" type="Node2D"]
+script = ExtResource("1_dino_desert_script")
+
+[node name="ChromeDinoMouth" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ChromeDinoMouth"]
+
+[node name="SlingshotLeft" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="SlingshotLeft"]
+
+[node name="SlingshotRight" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="SlingshotRight"]
+
+[node name="DinoWall1" type="StaticBody2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DinoWall1"]

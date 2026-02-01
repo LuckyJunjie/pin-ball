@@ -1,0 +1,20 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/v4/zones/AndroidAcresV4.gd" id="1_android_acres_script"]
+
+[node name="AndroidAcres" type="Node2D"]
+script = ExtResource("1_android_acres_script")
+
+[node name="SpaceshipRamp" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="SpaceshipRamp"]
+
+[node name="AndroidBumperA" type="RigidBody2D" parent="."]
+
+[node name="AndroidBumperB" type="RigidBody2D" parent="."]
+
+[node name="AndroidBumperCow" type="RigidBody2D" parent="."]
+
+[node name="AndroidSpaceship" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="AndroidSpaceship"]

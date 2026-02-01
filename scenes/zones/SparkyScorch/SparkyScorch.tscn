@@ -1,0 +1,18 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/v4/zones/SparkyScorchV4.gd" id="1_sparky_scorch_script"]
+
+[node name="SparkyScorch" type="Node2D"]
+script = ExtResource("1_sparky_scorch_script")
+
+[node name="SparkyBumper1" type="RigidBody2D" parent="."]
+
+[node name="SparkyBumper2" type="RigidBody2D" parent="."]
+
+[node name="SparkyBumper3" type="RigidBody2D" parent="."]
+
+[node name="SparkyComputer" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="SparkyComputer"]
+
+[node name="SparkyAnimatronic" type="Node2D" parent="."]

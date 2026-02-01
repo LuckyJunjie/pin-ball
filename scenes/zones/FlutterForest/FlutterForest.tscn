@@ -1,0 +1,18 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/v4/zones/FlutterForestV4.gd" id="1_flutter_forest_script"]
+
+[node name="FlutterForest" type="Node2D"]
+script = ExtResource("1_flutter_forest_script")
+
+[node name="Signpost" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Signpost"]
+
+[node name="DashBumperMain" type="RigidBody2D" parent="."]
+
+[node name="DashBumperA" type="RigidBody2D" parent="."]
+
+[node name="DashBumperB" type="RigidBody2D" parent="."]
+
+[node name="DashAnimatronic" type="Node2D" parent="."]

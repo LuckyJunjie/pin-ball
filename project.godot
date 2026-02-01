@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="PinBall"
-run/main_scene="res://scenes/MainMenu.tscn"
+run/main_scene="res://scenes/MainMenuV4.tscn"
 config/features=PackedStringArray("4.5", "Forward Plus")
 config/icon="res://icon.svg"
 
@@ -20,6 +20,8 @@ config/icon="res://icon.svg"
 GlobalGameSettings="*res://scripts/GlobalGameSettings.gd"
 CurrencyManager="*res://scripts/CurrencyManager.gd"
 SaveManager="*res://scripts/SaveManager.gd"
+GameManagerV4="*res://scripts/v4/GameManagerV4.gd"
+BackboxManagerV4="*res://scripts/v4/BackboxManagerV4.gd"
 
 [input]
 
