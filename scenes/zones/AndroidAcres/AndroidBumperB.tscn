@@ -1,0 +1,30 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/v4/components/BumperV4.gd" id="1_bumper_script"]
+[ext_resource type="Texture2D" uid="uid://b2gbdkojs0e6f" path="res://assets/sprites/wall.png" id="2_wall_texture"]
+[ext_resource type="Texture2D" path="res://assets/sprites/android/bumper/b/lit.png" id="3_lit_texture"]
+
+[sub_resource type="CircleShape2D" id="Circle_bumper"]
+radius = 25.0
+
+[sub_resource type="PhysicsMaterial" id="Phys_bumper"]
+friction = 0.1
+bounce = 0.9
+
+[node name="AndroidBumperB" type="RigidBody2D"]
+script = ExtResource("1_bumper_script")
+bumper_type = 0  # ANDROID
+bumper_id = "B"
+base_points = 20000
+lit_multiplier = 2
+collision_layer = 8
+collision_mask = 1
+physics_material_override = SubResource("Phys_bumper")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("3_lit_texture")
+scale = Vector2(0.6, 0.6)
+centered = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("Circle_bumper")

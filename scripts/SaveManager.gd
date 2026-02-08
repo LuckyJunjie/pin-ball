@@ -27,6 +27,9 @@ func save_all_data():
 	if global_settings:
 		save_data["equipped_items"] = global_settings.equipped_items
 	
+	# Ensure directory exists (for consistency, though user:// should always exist)
+	_ensure_user_directory()
+	
 	var file = FileAccess.open(save_file_path, FileAccess.WRITE)
 	if file:
 		file.store_string(JSON.stringify(save_data))
@@ -117,8 +120,19 @@ func _save_to_file():
 	# Use call_deferred to avoid saving during initialization
 	call_deferred("_do_save_to_file")
 
+func _ensure_user_directory() -> bool:
+	"""Ensure the user directory exists (should always exist, but check for safety)"""
+	var dir = DirAccess.open("user://")
+	if dir == null:
+		push_error("[SaveManager] Failed to open user:// directory")
+		return false
+	return true
+
 func _do_save_to_file():
 	"""Actually perform the file save"""
+	# Ensure directory exists before saving
+	_ensure_user_directory()
+	
 	var file = FileAccess.open(save_file_path, FileAccess.WRITE)
 	if file:
 		file.store_string(JSON.stringify(save_data))

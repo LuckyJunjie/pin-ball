@@ -1,114 +1,63 @@
-# Pinball Game - Design Documentation
-
-This folder contains the design and implementation documentation for the Pinball game project.
-
-## Document Structure
-
-- **[GDD.md](GDD.md)** - Comprehensive Game Design Document (industry standard format)
-- **[Technical-Design.md](Technical-Design.md)** - Architecture and implementation details
-- **[Component-Specifications.md](Component-Specifications.md)** - Detailed component specifications
-- **[Physics-Specifications.md](Physics-Specifications.md)** - Physics system technical details
-- **[UI-Design.md](UI-Design.md)** - UI/UX design specifications
-- **[Game-Flow.md](Game-Flow.md)** - Game flow and state management
+# Pinball Game v4.0 – Design Documentation
 
 ## Overview
 
-Design documents specify **how** the game is designed and implemented, including:
+This directory contains design documentation for Pinball Game v4.0. Version 4.0 replicates the **same functions and game design** as the open-source **I/O Pinball** (Flutter + Forge2D, Google I/O 2022) at `/Users/junjiepan/github/pinball`, implemented in **Godot 4.x**.
 
-- Game design (mechanics, world, objects, progression)
-- Technical architecture (system design, component structure)
-- Implementation details (scripts, scenes, data flow)
-- Physics specifications (collision, materials, layers)
-- UI/UX design (layout, visual design, user experience)
-- Game flow (state management, transitions, lifecycle)
+v4.0 does **not** include shop, currency, or battle pass from v2/v3; it is a clone of the Flutter I/O Pinball rules, playfield zones, scoring, bonuses, multiplier, rounds, and flow.
 
-## Document Categories
+## Document Index
 
-### Game Design Document (GDD)
-The [GDD.md](GDD.md) follows industry-standard format and covers:
-- Game overview and vision
-- Gameplay mechanics
-- Game world and level design
-- Game objects and entities
-- User interface
-- Controls and input
-- Progression and scoring
-- Visual design
-- Technical overview
-- Future enhancements
+### Parsing and Requirements
 
-### Technical Design
-The [Technical-Design.md](Technical-Design.md) covers:
-- System architecture
-- Scene structure
-- Script architecture
-- Data flow
-- Signal system
-- State management
-- Rendering system
-- Extension points
-- Performance considerations
+1. **[FLUTTER-PINBALL-PARSING.md](FLUTTER-PINBALL-PARSING.md)** – Parsing summary of the Flutter I/O Pinball project
+   - Components and file paths
+   - State machines (StartGameBloc, GameBloc, BackboxBloc)
+   - Playfield hierarchy and point values
+   - Bonus triggers, multiplier rule (5 ramp hits = +1, max 6), rounds (3), bonus ball spawn
+   - Camera, character themes, input, physics
+   - Cross-references to Flutter repo
 
-### Component Specifications
-The [Component-Specifications.md](Component-Specifications.md) provides detailed specs for:
-- Ball component
-- Flipper component
-- Ball Queue component
-- Game Manager component
-- Obstacle component
-- Obstacle Spawner component
-- UI component
-- Launcher component (optional)
-- Wall component
+2. **[Requirements-v4.0.md](Requirements-v4.0.md)** – Functional and non-functional requirements for v4.0
+   - Game state, rounds, scoring, bonuses, multiplier, skill shot, all zones
+   - Character select, how to play, game over, initials, leaderboard, share
+   - No Firebase required; platform Godot 4.x, desktop/mobile
 
-### Physics Specifications
-The [Physics-Specifications.md](Physics-Specifications.md) details:
-- Physics engine configuration
-- Physics layers and collision masks
-- Physics materials
-- Collision detection
-- Performance optimization
-- Physics debugging
+### Core Design
 
-### UI Design
-The [UI-Design.md](UI-Design.md) specifies:
-- UI layout and positioning
-- Visual design (colors, typography, hierarchy)
-- User experience principles
-- UI components
-- Responsive design considerations
-- Accessibility
+3. **[GDD-v4.0.md](GDD-v4.0.md)** – Game Design Document v4.0
+   - Overview and mechanics (scoring, multiplier, bonus ball, five bonuses)
+   - Playfield layout (zones and components)
+   - Flow: start → character → how to play → play → game over → initials → leaderboard/share
+   - UI (HUD, backbox displays, overlays), character themes, input, camera
 
-### Game Flow
-The [Game-Flow.md](Game-Flow.md) describes:
-- Game flow overview
-- Initialization flow
-- Gameplay loop
-- Ball lifecycle
-- State transitions
-- Signal flow
-- Error handling
+4. **[Technical-Design-v4.0.md](Technical-Design-v4.0.md)** – System architecture for Godot
+   - Scene tree (Main, Playfield, Backbox, zones, launcher, drain, flippers, ball(s))
+   - Scripts mapping from Flutter components
+   - State management (game + start flow + backbox), signals (Scored, RoundLost, BonusActivated, MultiplierIncreased, GameOver)
 
-## Related Documentation
+5. **[Game-Flow-v4.0.md](Game-Flow-v4.0.md)** – State diagrams and flows
+   - Start flow: initial → selectCharacter → howToPlay → play
+   - Game: waiting → playing → roundLost → (playing or gameOver)
+   - Backbox: leaderboard / initials / game over / share
+   - Round life cycle, bonus ball and multiplier flows
 
-For requirements (what the game needs to do), see the [requirements/](../requirements/) folder:
-- [Requirements.md](../requirements/Requirements.md) - Functional and non-functional requirements
-- [Technical-Requirements.md](../requirements/Technical-Requirements.md) - Platform and technical constraints
+6. **[Component-Specifications-v4.0.md](Component-Specifications-v4.0.md)** – Zone and component specs
+   - Android Acres, Dino Desert, Google Gallery, Flutter Forest, Sparky Scorch
+   - Launcher, Drain, Multipliers, Multiballs, Skill Shot, Backbox
+   - Behaviors (scoring, bonus, multiplier, ball spawn) and Godot equivalents
 
-## Design Principles
+7. **[Asset-Requirements-v4.0.md](Asset-Requirements-v4.0.md)** – Art and sounds
+   - Board background, bumpers, ramps, animatronics, score popups, backbox, ball variants, UI
+   - References to Flutter `assets/` and pinball_components / pinball_theme assets
 
-1. **Component-Based Architecture**: Modular, reusable components
-2. **Signal-Driven Communication**: Loose coupling via signals
-3. **Physics Realism**: Authentic pinball physics
-4. **Performance First**: Optimized for 60 FPS
-5. **Extensibility**: Architecture supports future enhancements
+8. **[V4.0-IMPLEMENTATION-SUMMARY.md](V4.0-IMPLEMENTATION-SUMMARY.md)** – Implementation summary
+   - How to run v4.0 (main scene MainMenuV4)
+   - Implemented: GameManagerV4, start flow, playfield, drain, skill shot, UI, game over
+   - Not yet: full zones, bonus ball triggers, backbox leaderboard/initials/share, camera behavior
 
-## Navigation
+## Related
 
-- Start with [GDD.md](GDD.md) for high-level game design
-- Review [Technical-Design.md](Technical-Design.md) for architecture
-- Check [Component-Specifications.md](Component-Specifications.md) for implementation details
-- Refer to [Physics-Specifications.md](Physics-Specifications.md) for physics system
-- See [UI-Design.md](UI-Design.md) for user interface design
-- Review [Game-Flow.md](Game-Flow.md) for game flow and state management
-
+- **Implementation:** Godot project under [scripts/](../scripts/), [scenes/](../scenes/), [assets/](../assets/) (v4.0-specific or shared).
+- **v3.0 design:** [design-v3.0/](../design-v3.0/) – enhanced physics, skill shot, multiball, multiplier, polish (different scope from v4.0 clone).
+- **Source:** Flutter I/O Pinball at `/Users/junjiepan/github/pinball`.

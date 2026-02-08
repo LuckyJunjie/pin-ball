@@ -35,6 +35,7 @@ var bonus_history: Array[Bonus] = []
 var status: Status = Status.WAITING
 var balls_container: Node2D = null
 var ball_scene: PackedScene = null
+var launcher_node: Node = null  # Set by MainV4; used to call set_ball after spawn
 var launcher_spawn_position: Vector2 = Vector2(400, 500)
 var bonus_ball_spawn_position: Vector2 = Vector2(400, 300)
 var bonus_ball_impulse: Vector2 = Vector2(-200, 0)
@@ -94,6 +95,15 @@ func _initialize_ball_pool() -> void:
 			print("GameManagerV4: BallPoolV4 initialized")
 		elif ball_pool and ball_pool.is_initialized():
 			print("GameManagerV4: BallPoolV4 already initialized")
+		else:
+			push_warning("GameManagerV4: BallPoolV4 instance not found")
+
+func _ensure_ball_pool_initialized() -> void:
+	# Ensure BallPoolV4 is initialized (re-inits if container was freed by scene change)
+	if ball_scene and balls_container:
+		var ball_pool = BallPoolV4.get_instance()
+		if ball_pool:
+			ball_pool.initialize(ball_scene, balls_container)
 		else:
 			push_warning("GameManagerV4: BallPoolV4 instance not found")
 
@@ -219,6 +229,7 @@ func _return_all_balls_to_pool() -> void:
 		print("GameManagerV4: Returned all balls to pool")
 
 func start_game() -> void:
+	print("GameManagerV4: start_game() called")
 	round_score = 0
 	total_score = 0
 	multiplier = 1
@@ -232,6 +243,7 @@ func start_game() -> void:
 	
 	# Save initial game state
 	if is_save_system_enabled:
+		print("GameManagerV4: Calling force_save() from start_game()")
 		force_save()
 	
 	game_started.emit()
@@ -256,29 +268,32 @@ func _spawn_ball_at_launcher() -> void:
 	if not ball_scene or not balls_container:
 		return
 	
-	# Try to use BallPoolV4 if available
-	var ball_pool = BallPoolV4.get_instance()
-	if ball_pool and ball_pool.is_initialized():
-		var ball = ball_pool.spawn_ball_at_position(launcher_spawn_position)
-		if ball:
-			# Connect ball lost signal
-			if ball.has_signal("ball_lost") and not ball.ball_lost.is_connected(_on_ball_lost):
-				ball.ball_lost.connect(_on_ball_lost)
-			return
-		else:
-			push_warning("GameManagerV4: BallPoolV4 failed to provide ball, falling back to direct instantiation")
+	# Ensure BallPoolV4 is initialized before attempting to use it
+	_ensure_ball_pool_initialized()
 	
-	# Fallback to direct instantiation if pool is not available
-	var ball: RigidBody2D = ball_scene.instantiate()
-	balls_container.add_child(ball)
-	ball.global_position = launcher_spawn_position
-	if ball.has_method("reset_ball"):
-		ball.reset_ball()
-	if ball.get("initial_position") != null:
-		ball.initial_position = launcher_spawn_position
-	if ball.has_signal("ball_lost"):
-		ball.ball_lost.connect(_on_ball_lost)
-	ball.freeze = false
+	var ball_pool = BallPoolV4.get_instance()
+	var ball: RigidBody2D = null
+	if ball_pool and ball_pool.is_initialized():
+		ball = ball_pool.spawn_ball_at_position(launcher_spawn_position, Vector2.ZERO, true)  # freeze=true for launcher ball
+	
+	if not ball:
+		# Direct instantiation when pool unavailable or failed
+		ball = ball_scene.instantiate()
+		balls_container.add_child(ball)
+		if ball.has_signal("ball_lost"):
+			ball.ball_lost.connect(_on_ball_lost)
+	
+	if ball:
+		ball.freeze = true  # Freeze immediately to prevent physics interaction
+		ball.global_position = launcher_spawn_position
+		ball.visible = true
+		if ball.has_method("reset_ball"):
+			ball.reset_ball()
+		if ball.get("initial_position") != null:
+			ball.initial_position = launcher_spawn_position
+		# Notify Launcher so it can launch the ball
+		if launcher_node and launcher_node.has_method("set_ball"):
+			launcher_node.set_ball(ball)
 
 func _spawn_bonus_ball() -> void:
 	if not ball_scene or not balls_container:
@@ -384,6 +399,11 @@ func save_game_state() -> bool:
 		if not _create_backup():
 			print("GameManagerV4: Failed to create backup, proceeding with save anyway")
 	
+	# Ensure saves directory exists before writing
+	if not _ensure_saves_directory():
+		print("GameManagerV4: Failed to create saves directory")
+		return false
+	
 	# Save to file
 	var file = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file == null:
@@ -457,10 +477,32 @@ func _apply_game_state(state: Dictionary) -> void:
 	# Reset auto-save timer
 	auto_save_timer = 0.0
 
+func _ensure_saves_directory() -> bool:
+	## Ensure the saves directory exists before attempting to write files
+	var dir = DirAccess.open("user://")
+	if dir == null:
+		print("GameManagerV4: Failed to open user:// directory")
+		return false
+	
+	# Check if saves directory exists
+	if not dir.dir_exists("saves"):
+		# Create the saves directory
+		var error = dir.make_dir("saves")
+		if error != OK:
+			print("GameManagerV4: Failed to create saves directory, error: %s" % error_string(error))
+			return false
+		print("GameManagerV4: Created saves directory")
+	
+	return true
+
 func _create_backup() -> bool:
 	## Create a backup of the current save file
 	if not FileAccess.file_exists(SAVE_PATH):
 		return true  # Nothing to backup
+	
+	# Ensure saves directory exists before creating backup
+	if not _ensure_saves_directory():
+		return false
 	
 	var source_file = FileAccess.open(SAVE_PATH, FileAccess.READ)
 	if source_file == null:
@@ -518,6 +560,10 @@ func force_save() -> void:
 func delete_save() -> bool:
 	## Delete the save file (for testing or reset)
 	if FileAccess.file_exists(SAVE_PATH):
+		# First ensure the saves directory exists
+		if not _ensure_saves_directory():
+			return false
+		
 		var dir = DirAccess.open("user://saves/")
 		if dir:
 			var result = dir.remove("v4.0_save.json")

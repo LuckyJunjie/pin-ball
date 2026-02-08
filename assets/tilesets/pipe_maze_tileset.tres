@@ -1,4 +1,4 @@
-[gd_resource type="TileSet" format=4]
+[gd_resource type="TileSet" load_steps=4 format=3 uid="uid://beo7xipfqad1o"]
 
 [ext_resource type="Texture2D" uid="uid://b2gbdkojs0e6f" path="res://assets/sprites/wall.png" id="1_wall_texture"]
 
@@ -10,12 +10,8 @@ bounce = 0.3
 texture = ExtResource("1_wall_texture")
 0:0/0 = 0
 0:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-16, -16, 16, -16, 16, 16, -16, 16)
-0:0/0/physics_layer_0/polygon_0/one_way = false
-0:0/0/physics_layer_0/polygon_0/one_way_margin = 1.0
 0:1/0 = 0
 0:1/0/physics_layer_0/polygon_0/points = PackedVector2Array(-16, -16, 16, -16, 16, 16, -16, 16)
-0:1/0/physics_layer_0/polygon_0/one_way = false
-0:1/0/physics_layer_0/polygon_0/one_way_margin = 1.0
 
 [resource]
 physics_layer_0/collision_layer = 4

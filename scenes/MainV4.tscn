@@ -1,16 +1,22 @@
-[gd_scene load_steps=30 format=3]
+[gd_scene load_steps=37 format=3]
 
 [ext_resource type="Script" path="res://scripts/v4/MainV4.gd" id="1_main_script"]
 [ext_resource type="Script" path="res://scripts/v4/RampV4.gd" id="13_ramp_script"]
 [ext_resource type="PackedScene" uid="uid://c5ppwlxkv307j" path="res://scenes/Ball.tscn" id="2_ball_scene"]
 [ext_resource type="PackedScene" uid="uid://d0513d8iwhejf" path="res://scenes/Flipper.tscn" id="3_flipper_scene"]
 [ext_resource type="PackedScene" uid="uid://dg5dian3ahboq" path="res://scenes/Launcher.tscn" id="4_launcher_scene"]
-[ext_resource type="Texture2D" path="res://assets/sprites/v4.0/board_background.png" id="5_bg"]
-[ext_resource type="Texture2D" path="res://assets/sprites/v4.0/backbox/marquee.png" id="12_marquee"]
+[ext_resource type="Texture2D" path="res://assets/sprites/board_background.png" id="5_bg"]
+[ext_resource type="Texture2D" path="res://assets/sprites/backbox/marquee.png" id="12_marquee"]
 [ext_resource type="Texture2D" uid="uid://b2gbdkojs0e6f" path="res://assets/sprites/wall.png" id="6_wall"]
+[ext_resource type="Texture2D" path="res://assets/sprites/launch_ramp/ramp.png" id="15_ramp_tex"]
+[ext_resource type="Texture2D" path="res://assets/sprites/android/ramp/main.png" id="19_android_ramp"]
+[ext_resource type="Texture2D" path="res://assets/sprites/skill_shot/pin.png" id="20_skill_pin"]
+[ext_resource type="Texture2D" path="res://assets/sprites/kicker/left/dimmed.png" id="21_kicker_left"]
+[ext_resource type="Texture2D" path="res://assets/sprites/kicker/right/dimmed.png" id="22_kicker_right"]
 [ext_resource type="Script" path="res://scripts/v4/DrainV4.gd" id="7_drain_script"]
 [ext_resource type="Script" path="res://scripts/v4/UIV4.gd" id="8_ui_script"]
 [ext_resource type="Script" path="res://scripts/v4/SkillShotV4.gd" id="9_skillshot_script"]
+[ext_resource type="Script" path="res://scripts/v4/KickerV4.gd" id="23_kicker_script"]
 [ext_resource type="Script" uid="uid://xpynup2qppu3" path="res://scripts/SoundManager.gd" id="10_sound_script"]
 [ext_resource type="PackedScene" path="res://scenes/zones/AndroidAcres/AndroidAcres.tscn" id="14_android_acres"]
 [ext_resource type="PackedScene" path="res://scenes/zones/DinoDesert/DinoDesert.tscn" id="15_dino_desert"]
@@ -46,6 +52,12 @@ radius = 25.0
 [sub_resource type="RectangleShape2D" id="Rect_ramp"]
 size = Vector2(50, 35)
 
+[sub_resource type="RectangleShape2D" id="Rect_kicker"]
+size = Vector2(15, 50)
+
+[sub_resource type="RectangleShape2D" id="Rect_launch_ramp"]
+size = Vector2(150, 10)
+
 [node name="MainV4" type="Node2D"]
 script = ExtResource("1_main_script")
 
@@ -53,7 +65,6 @@ script = ExtResource("1_main_script")
 position = Vector2(400, 300)
 
 [node name="Playfield" type="Node2D" parent="."]
-z_index = -1
 
 [node name="Background" type="Sprite2D" parent="Playfield"]
 modulate = Color(1, 1, 1, 1)
@@ -66,7 +77,7 @@ centered = true
 
 [node name="WallTop" type="StaticBody2D" parent="Playfield/Walls"]
 collision_layer = 4
-collision_mask = 0
+collision_mask = 1  # Collide with balls (layer 1)
 physics_material_override = SubResource("Phys_wall")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Playfield/Walls/WallTop"]
@@ -75,7 +86,7 @@ shape = SubResource("Rect_top")
 
 [node name="WallLeft" type="StaticBody2D" parent="Playfield/Walls"]
 collision_layer = 4
-collision_mask = 0
+collision_mask = 1  # Collide with balls (layer 1)
 physics_material_override = SubResource("Phys_wall")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Playfield/Walls/WallLeft"]
@@ -84,7 +95,7 @@ shape = SubResource("Rect_left")
 
 [node name="WallRight" type="StaticBody2D" parent="Playfield/Walls"]
 collision_layer = 4
-collision_mask = 0
+collision_mask = 1  # Collide with balls (layer 1)
 physics_material_override = SubResource("Phys_wall")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Playfield/Walls/WallRight"]
@@ -93,7 +104,7 @@ shape = SubResource("Rect_right")
 
 [node name="WallBottomLeft" type="StaticBody2D" parent="Playfield/Walls"]
 collision_layer = 4
-collision_mask = 0
+collision_mask = 1  # Collide with balls (layer 1)
 physics_material_override = SubResource("Phys_wall")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Playfield/Walls/WallBottomLeft"]
@@ -102,7 +113,7 @@ shape = SubResource("Rect_bottom_l")
 
 [node name="WallBottomRight" type="StaticBody2D" parent="Playfield/Walls"]
 collision_layer = 4
-collision_mask = 0
+collision_mask = 1  # Collide with balls (layer 1)
 physics_material_override = SubResource("Phys_wall")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Playfield/Walls/WallBottomRight"]
@@ -115,7 +126,7 @@ collision_mask = 1
 script = ExtResource("7_drain_script")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Playfield/Drain"]
-position = Vector2(400, 605)
+position = Vector2(400, 660)
 shape = SubResource("Rect_drain")
 
 [node name="SkillShot" type="Area2D" parent="Playfield"]
@@ -123,54 +134,115 @@ collision_layer = 0
 collision_mask = 1
 script = ExtResource("9_skillshot_script")
 
+[node name="Sprite2D" type="Sprite2D" parent="Playfield/SkillShot"]
+position = Vector2(400, 200)
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("20_skill_pin")
+centered = true
+
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Playfield/SkillShot"]
 position = Vector2(400, 200)
 shape = SubResource("Circle_skillshot")
 
 [node name="Ramp" type="Area2D" parent="Playfield"]
+position = Vector2(180, 180)
+visible = false
 collision_layer = 0
 collision_mask = 1
 script = ExtResource("13_ramp_script")
 
+[node name="Sprite2D" type="Sprite2D" parent="Playfield/Ramp"]
+texture = ExtResource("19_android_ramp")
+scale = Vector2(0.5, 0.5)
+centered = true
+
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Playfield/Ramp"]
-position = Vector2(180, 180)
 shape = SubResource("Rect_ramp")
+
+[node name="LaunchRamp" type="StaticBody2D" parent="Playfield"]
+position = Vector2(600, 480)
+rotation = -0.436332
+collision_layer = 4
+collision_mask = 1
+physics_material_override = SubResource("Phys_wall")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Playfield/LaunchRamp"]
+shape = SubResource("Rect_launch_ramp")
 
 [node name="Zones" type="Node2D" parent="Playfield"]
 
 [node name="AndroidAcres" parent="Playfield/Zones" instance=ExtResource("14_android_acres")]
-position = Vector2(200, 150)  # TODO: Convert from Flutter coordinates
+position = Vector2(200, 150)
 
 [node name="DinoDesert" parent="Playfield/Zones" instance=ExtResource("15_dino_desert")]
-position = Vector2(600, 150)  # TODO: Convert from Flutter coordinates
+position = Vector2(600, 150)
+visible = false
 
 [node name="FlutterForest" parent="Playfield/Zones" instance=ExtResource("16_flutter_forest")]
-position = Vector2(200, 400)  # TODO: Convert from Flutter coordinates
+position = Vector2(200, 400)
+visible = false
 
 [node name="SparkyScorch" parent="Playfield/Zones" instance=ExtResource("17_sparky_scorch")]
-position = Vector2(600, 400)  # TODO: Convert from Flutter coordinates
+position = Vector2(600, 400)
+visible = false
 
 [node name="GoogleGallery" parent="Playfield/Zones" instance=ExtResource("18_google_gallery")]
-position = Vector2(400, 250)  # TODO: Convert from Flutter coordinates
+position = Vector2(400, 250)
+visible = false
 
 [node name="SoundManager" type="Node" parent="."]
 script = ExtResource("10_sound_script")
 
 [node name="Balls" type="Node2D" parent="."]
+z_index = 2
 
 [node name="Launcher" parent="." instance=ExtResource("4_launcher_scene")]
 z_index = 1
-position = Vector2(400, 550)  # TODO: Convert from Flutter coordinates
+position = Vector2(605, 518)
+
+[node name="Kickers" type="Node2D" parent="Playfield"]
+z_index = 1
+
+[node name="KickerLeft" type="Area2D" parent="Playfield/Kickers"]
+position = Vector2(286, 426)
+collision_layer = 8
+collision_mask = 1
+script = ExtResource("23_kicker_script")
+
+[node name="Sprite2D" type="Sprite2D" parent="Playfield/Kickers/KickerLeft"]
+position = Vector2(7, 25)
+scale = Vector2(0.4, 0.4)
+texture = ExtResource("21_kicker_left")
+centered = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Playfield/Kickers/KickerLeft"]
+shape = SubResource("Rect_kicker")
+
+[node name="KickerRight" type="Area2D" parent="Playfield/Kickers"]
+position = Vector2(514, 426)
+collision_layer = 8
+collision_mask = 1
+script = ExtResource("23_kicker_script")
+
+[node name="Sprite2D" type="Sprite2D" parent="Playfield/Kickers/KickerRight"]
+position = Vector2(7, 25)
+scale = Vector2(0.4, 0.4)
+texture = ExtResource("22_kicker_right")
+centered = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Playfield/Kickers/KickerRight"]
+shape = SubResource("Rect_kicker")
 
 [node name="Flippers" type="Node2D" parent="."]
+z_index = 1
 
 [node name="FlipperLeft" parent="Flippers" instance=ExtResource("3_flipper_scene")]
-position = Vector2(300, 550)  # TODO: Convert from Flutter coordinates (-18.65, 43.6)
+position = Vector2(340, 518)
 rest_angle = 30.0
 pressed_angle = -10.0
 
 [node name="FlipperRight" parent="Flippers" instance=ExtResource("3_flipper_scene")]
-position = Vector2(500, 550)  # TODO: Convert from Flutter coordinates (4.75, 43.6)
+position = Vector2(424, 518)
 flipper_side = "right"
 rest_angle = -30.0
 pressed_angle = 10.0
@@ -324,7 +396,7 @@ theme_override_constants/separation = 2
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 16
-text = "score:"
+text = "SCORE"
 
 [node name="ScoreValue" type="Label" parent="UI/ScorePanel/HBox/ScoreColumn"]
 layout_mode = 2
@@ -419,6 +491,7 @@ layout_mode = 2
 text = "Replay"
 
 [node name="BackToMenuButton" type="Button" parent="UI"]
+focus_mode = 0
 offset_left = 20.0
 offset_top = 550.0
 offset_right = 160.0

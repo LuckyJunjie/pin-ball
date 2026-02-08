@@ -36,6 +36,16 @@ func _ready() -> void:
 	add_to_group("zones")
 	add_to_group("android_acres")
 	
+	# saucer.png is 5x3 sprite sheet (15 frames); show 1 frame only
+	var saucer_sprite = get_node_or_null("AndroidSpaceship/Sprite2D")
+	if saucer_sprite and saucer_sprite is Sprite2D:
+		var tex = saucer_sprite.texture
+		if tex:
+			var fw = tex.get_width() / 5.0
+			var fh = tex.get_height() / 3.0
+			saucer_sprite.region_enabled = true
+			saucer_sprite.region_rect = Rect2(0, 0, fw, fh)
+	
 	# Configure bumpers
 	_configure_bumpers()
 	

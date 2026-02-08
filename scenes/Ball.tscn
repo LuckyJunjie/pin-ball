@@ -1,16 +1,16 @@
 [gd_scene load_steps=3 format=3 uid="uid://bqj8k3m4n5p6r7s8"]
 
 [ext_resource type="Script" path="res://scripts/Ball.gd" id="1_ball_script"]
-[ext_resource type="Texture2D" uid="uid://crq2nyf046hpl" path="res://assets/sprites/ball.png" id="2_ball_texture"]
+[ext_resource type="Texture2D" path="res://assets/sprites/android/ball.png" id="2_ball_texture"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_ball"]
-radius = 8.0
+radius = 12.0
 
 [node name="Ball" type="RigidBody2D"]
 script = ExtResource("1_ball_script")
 collision_layer = 1
 collision_mask = 14
-mass = 0.5
+mass = 0.4
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_ball")
@@ -18,12 +18,13 @@ shape = SubResource("CircleShape2D_ball")
 [node name="Visual" type="Sprite2D" parent="."]
 texture = ExtResource("2_ball_texture")
 offset = Vector2(0, 0)
-scale = Vector2(1, 1)
+scale = Vector2(0.3, 0.3)
+centered = true
 
 [node name="ColorRectFallback" type="ColorRect" parent="."]
-offset_left = -8.0
-offset_top = -8.0
-offset_right = 8.0
-offset_bottom = 8.0
+offset_left = -5.0
+offset_top = -5.0
+offset_right = 5.0
+offset_bottom = 5.0
 color = Color(1, 0.2, 0.2, 1)
 

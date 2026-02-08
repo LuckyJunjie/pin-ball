@@ -57,11 +57,17 @@ func _process(_delta: float) -> void:
 	_check_pool_contraction()
 
 ## Initialize the ball pool with a specific scene and container.
-## Should be called once at game start.
+## Re-initializes if container was freed (e.g. scene change).
 func initialize(ball_scene: PackedScene, container: Node2D, initial_pool_size: int = DEFAULT_POOL_SIZE) -> void:
+	# Re-init if container is invalid (scene change freed it) or different
+	var container_valid = is_instance_valid(_balls_container) if _balls_container else false
+	if _ball_scene != null and container_valid and _balls_container == container:
+		return  # Already initialized with same valid container
+	
+	# Clear stale pool if re-initializing
 	if _ball_scene != null:
-		push_warning("BallPoolV4 already initialized")
-		return
+		_available_balls.clear()
+		_active_balls.clear()
 	
 	_ball_scene = ball_scene
 	_balls_container = container
@@ -96,6 +102,8 @@ func get_ball() -> RigidBody2D:
 func return_ball(ball: RigidBody2D) -> void:
 	if not ball:
 		return
+	if _available_balls.has(ball):
+		return  # Already in pool, avoid double-add
 	
 	if _active_balls.has(ball):
 		_active_balls.erase(ball)
@@ -115,7 +123,7 @@ func return_ball(ball: RigidBody2D) -> void:
 	ball_deactivated.emit(ball)
 
 ## Spawn a ball at a specific position with optional impulse.
-func spawn_ball_at_position(position: Vector2, impulse: Vector2 = Vector2.ZERO) -> RigidBody2D:
+func spawn_ball_at_position(position: Vector2, impulse: Vector2 = Vector2.ZERO, freeze: bool = false) -> RigidBody2D:
 	var ball: RigidBody2D = get_ball()
 	if not ball:
 		return null
@@ -127,6 +135,10 @@ func spawn_ball_at_position(position: Vector2, impulse: Vector2 = Vector2.ZERO) 
 		ball.reset_ball()
 	if ball.get("initial_position") != null:
 		ball.initial_position = position
+	
+	# Freeze if requested (e.g., for launcher balls)
+	if freeze:
+		ball.freeze = true
 	
 	# Apply impulse if provided
 	if impulse != Vector2.ZERO:

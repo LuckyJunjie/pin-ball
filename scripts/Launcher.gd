@@ -5,11 +5,11 @@ extends Node2D
 
 signal ball_launched(force: Vector2)
 
-@export var base_launch_force: Vector2 = Vector2(0, -500)
-@export var max_launch_force: Vector2 = Vector2(0, -1000)
+@export var base_launch_force: Vector2 = Vector2(0, -400)
+@export var max_launch_force: Vector2 = Vector2(0, -800)
 @export var charge_rate: float = 2.0  # Charge per second
-@export var launcher_position: Vector2 = Vector2(720, 400)  # Positioned below queue, higher for better playfield access
-@export var horizontal_launch_angle: float = -35.0  # Angle in degrees (0 = straight up, negative = left toward center) - increased significantly for center guidance
+@export var launcher_position: Vector2 = Vector2(605, 518)  # Flutter: right side (41, 43.7)->(605,518); overridden in _ready
+@export var horizontal_launch_angle: float = -25.0  # Launch left toward center from right-side plunger (negative=left)
 @export var plunger_rest_position: Vector2 = Vector2(0, 0)
 @export var plunger_max_pull: Vector2 = Vector2(0, 30)  # How far back the plunger can go
 
@@ -19,16 +19,25 @@ var is_charging: bool = false
 var current_ball: RigidBody2D = null
 var plunger_node: Node2D = null
 var charge_meter_node: ProgressBar = null
+var capture_cooldown: float = 0.0
 
 func _get_debug_mode() -> bool:
-	"""Helper to get debug mode from GameManager"""
-	var game_manager = get_tree().get_first_node_in_group("game_manager")
-	if game_manager:
-		# Access debug_mode property directly (it's an @export var in GameManager)
-		var debug = game_manager.get("debug_mode")
-		if debug != null:
-			return bool(debug)
-	return false
+	"""Helper to get debug mode from GameManager or GameManagerV4"""
+	# Temporary: always return true for debugging
+	return true
+	# var game_manager = get_tree().get_first_node_in_group("game_manager")
+	# if game_manager:
+	# 	# Access debug_mode property directly (it's an @export var in GameManager)
+	# 	var debug = game_manager.get("debug_mode")
+	# 	if debug != null:
+	# 		return bool(debug)
+	# # Fallback to GameManagerV4
+	# var game_manager_v4 = get_node_or_null("/root/GameManagerV4")
+	# if game_manager_v4:
+	# 	var debug = game_manager_v4.get("debug_mode")
+	# 	if debug != null:
+	# 		return bool(debug)
+	# return false
 
 func _ready():
 	if _get_debug_mode():
@@ -38,6 +47,18 @@ func _ready():
 		print("[Launcher] Position: ", position)
 		print("[Launcher] Visible: ", visible)
 		print("[Launcher] Launcher position: ", launcher_position)
+	
+	# v4: Use node's global position as launcher position (pinball layout)
+	launcher_position = global_position
+	
+	# Find plunger visual node - plunger.png is a 20-frame sprite sheet; show 1 frame only
+	var plunger_visual = get_node_or_null("Plunger/Visual")
+	if plunger_visual and plunger_visual is Sprite2D:
+		var tex = plunger_visual.texture
+		if tex:
+			var fw = tex.get_width() / 20.0  # 20 frames per Flutter plunger
+			plunger_visual.region_enabled = true
+			plunger_visual.region_rect = Rect2(0, 0, fw, tex.get_height())
 	
 	# Find plunger visual node
 	plunger_node = get_node_or_null("Plunger")
@@ -50,7 +71,7 @@ func _ready():
 		add_child(plunger_node)
 		# Add a simple visual representation (Sprite2D with fallback)
 		var visual = Sprite2D.new()
-		var texture = load("res://assets/sprites/plunger.png")
+		var texture = load("res://assets/sprites/plunger/plunger.png") as Texture2D
 		if texture:
 			visual.texture = texture
 		else:
@@ -68,60 +89,34 @@ func _ready():
 		if _get_debug_mode():
 			print("[Launcher] Plunger node found/created at: ", plunger_node.position)
 	
-	# Find or create charge meter
-	charge_meter_node = get_node_or_null("ChargeMeter")
-	if not charge_meter_node:
-		if _get_debug_mode():
-			print("[Launcher] WARNING: ChargeMeter not found, creating fallback")
-		charge_meter_node = ProgressBar.new()
-		charge_meter_node.name = "ChargeMeter"
-		charge_meter_node.min_value = 0.0
-		charge_meter_node.max_value = 1.0
-		charge_meter_node.value = 0.0
-		charge_meter_node.size = Vector2(100, 10)
-		charge_meter_node.position = Vector2(-50, -40)
-		add_child(charge_meter_node)
-	
-		if _get_debug_mode():
-			print("[Launcher] ChargeMeter position: ", charge_meter_node.position)
-	
-	# Add visual label if debug mode enabled
-	if _get_debug_mode():
-		add_visual_label("LAUNCHER")
-		print("[Launcher] _ready() completed")
+	# Charge meter removed - Flutter uses pull/release without % display
 
-func _process(delta):
-	# Check for ball arrival (ball falling from queue)
-	if not current_ball or not is_instance_valid(current_ball):
+func _physics_process(delta):
+	# Update capture cooldown
+	if capture_cooldown > 0.0:
+		capture_cooldown -= delta
+	
+	# Check for ball arrival (when no ball assigned)
+	if (not current_ball or not is_instance_valid(current_ball)) and capture_cooldown <= 0.0:
 		_check_ball_arrival()
 	
-	# Handle input for charging (only Space key now, Down Arrow releases ball)
-	var launch_action = Input.is_action_pressed("launch_ball")
-	# Check if Space is pressed (not Down Arrow)
-	var charge_input = launch_action and not Input.is_action_pressed("ui_down")
-	
-	# Check if we have a valid ball
 	var has_valid_ball = current_ball != null and is_instance_valid(current_ball)
+	var launch_pressed = Input.is_action_pressed("launch_ball")
+	var launch_just_released = Input.is_action_just_released("launch_ball")
 	
-	if charge_input and has_valid_ball:
+	if launch_pressed and has_valid_ball:
 		# Start or continue charging
 		if not is_charging:
-			if _get_debug_mode():
-				print("[Launcher] Starting to charge - ball at: ", current_ball.global_position)
 			is_charging = true
 			current_charge = 0.0
-		
-		# Increase charge
 		current_charge = min(current_charge + charge_rate * delta, max_charge)
-		
-		# Update visual feedback
 		update_plunger_visual()
 		update_charge_meter()
 	else:
-		# Release and launch if we were charging
-		if is_charging and has_valid_ball:
-			if _get_debug_mode():
-				print("[Launcher] Releasing charge - launching ball with charge: ", current_charge)
+		# Key released or not pressed - launch if we have a ball ready
+		if has_valid_ball and (is_charging or launch_just_released):
+			if current_charge <= 0.0:
+				current_charge = 0.2  # Minimum launch on tap
 			launch_ball()
 		is_charging = false
 		current_charge = 0.0
@@ -129,20 +124,21 @@ func _process(delta):
 		update_charge_meter()
 
 func set_ball(ball: RigidBody2D):
-	"""Set the ball to be launched - position ball at launcher"""
-	print("[Launcher] set_ball() called with ball: ", ball)
+	"""Set the ball to be launched - position ball in channel above plunger"""
+	if _get_debug_mode():
+		print("[Launcher] set_ball called with ball: ", ball, " at launcher_position: ", launcher_position)
 	current_ball = ball
 	if ball:
-		print("[Launcher] Ball global position: ", ball.global_position, ", launcher position: ", launcher_position)
-		# Always position ball at launcher when set_ball is called
-		# This ensures ball is ready for launch
+		var ball_pos = launcher_position + Vector2(-3, -35)
 		if _get_debug_mode():
-			print("[Launcher] Positioning ball at launcher position: ", launcher_position)
-		ball.global_position = launcher_position
-		ball.freeze = true  # Freeze ball at launcher
-		ball.reset_ball()
-		if _get_debug_mode():
-			print("[Launcher] Ball positioned and ready for launch at: ", launcher_position)
+			print("[Launcher] Placing ball at position: ", ball_pos, " (global: ", ball.global_position, ")")
+		ball.global_position = ball_pos
+		if ball.get("initial_position") != null:
+			ball.initial_position = ball_pos
+		ball.freeze = true
+		ball.linear_velocity = Vector2.ZERO
+		if ball.has_method("reset_ball"):
+			ball.reset_ball()
 
 func update_plunger_visual():
 	"""Update the visual position of the plunger based on charge"""
@@ -158,60 +154,51 @@ func update_charge_meter():
 func launch_ball():
 	"""Launch the ball with current charge"""
 	if _get_debug_mode():
-		print("[Launcher] launch_ball() called")
-	if not current_ball:
+		print("[Launcher] launch_ball called, current_ball: ", current_ball, ", charge: ", current_charge)
+	if not current_ball or not is_instance_valid(current_ball):
 		if _get_debug_mode():
-			print("[Launcher] ERROR: launch_ball() called but current_ball is null!")
+			print("[Launcher] No valid ball to launch")
 		return
-	
-	if _get_debug_mode():
-		print("[Launcher] Launching ball at position: ", current_ball.global_position, " with charge: ", current_charge)
-	
-	# Unfreeze ball before launching
-	current_ball.freeze = false
+	var ball_to_launch = current_ball
+	current_ball = null  # Clear before launch so we don't double-launch
 	
 	# Calculate launch force based on charge
 	var force_range = max_launch_force - base_launch_force
 	var vertical_force = base_launch_force.y + (force_range.y * current_charge)
-	
-	# Add horizontal component based on angle
 	var angle_rad = deg_to_rad(horizontal_launch_angle)
-	var horizontal_force = vertical_force * tan(angle_rad)  # Horizontal component
+	var horizontal_force = vertical_force * tan(angle_rad)
 	var launch_force = Vector2(horizontal_force, vertical_force)
 	if _get_debug_mode():
-		print("[Launcher] Calculated launch force: ", launch_force, " (angle: ", horizontal_launch_angle, "°)")
+		print("[Launcher] Launch force: ", launch_force)
 	
-	# Launch the ball
-	current_ball.launch_ball(launch_force)
-	if _get_debug_mode():
-		print("[Launcher] Ball launched successfully")
-	
-	# Emit signal
+	ball_to_launch.launch_ball(launch_force)
 	ball_launched.emit(launch_force)
 	
-	# Reset charge
 	current_charge = 0.0
 	is_charging = false
-	current_ball = null
-	if _get_debug_mode():
-		print("[Launcher] Launcher reset, ready for next ball")
+	capture_cooldown = 1.5  # Prevent immediate recapture (increased from 0.5)
 
 func _check_ball_arrival():
-	"""Check if a ball has arrived at launcher area"""
-	# Find all balls in scene
+	"""Check if a ball has arrived at launcher area (spawned or returned)"""
+	if _get_debug_mode():
+		print("[Launcher] _check_ball_arrival called, launcher_position: ", launcher_position)
 	var balls = get_tree().get_nodes_in_group("balls")
-	
-	# Check balls in group
+	if _get_debug_mode():
+		print("[Launcher] Found ", balls.size(), " balls in group")
 	for ball in balls:
-		if ball is RigidBody2D and ball.collision_layer == 1:  # Ball layer
-			var distance = ball.global_position.distance_to(launcher_position)
-			# Check if ball is near launcher and not frozen
-			# Only catch balls that are moving toward launcher (not falling from queue above)
-			# Balls falling from queue start at y < 200, so ignore those
-			if distance < 50.0 and not ball.freeze and ball.global_position.y > 350.0:
-				# Ball is near launcher and below launcher position (came from playfield)
+		if ball is RigidBody2D and ball.collision_layer == 1:
+			var dist = ball.global_position.distance_to(launcher_position)
+			# Accept balls near launcher (right side: x>500, y in launcher range)
+			if _get_debug_mode():
+				print("[Launcher] Checking ball at ", ball.global_position, " dist=", dist, " y>200? ", ball.global_position.y > 200.0, " x>450? ", ball.global_position.x > 450.0)
+			# Capture only if ball is near launcher both horizontally and vertically
+			var y_threshold = launcher_position.y - 30.0  # Ball must be below launcher (higher Y = lower on screen)
+			var x_threshold = 50.0  # Horizontal tolerance
+			var within_y = ball.global_position.y > y_threshold and ball.global_position.y < launcher_position.y + 30.0
+			var within_x = ball.global_position.x > launcher_position.x - x_threshold and ball.global_position.x < launcher_position.x + x_threshold
+			if dist < 100.0 and within_y and within_x:
 				if _get_debug_mode():
-					print("[Launcher] Ball arrived at launcher area, distance: ", distance)
+					print("[Launcher] Ball at launcher area, distance: ", dist, " within_y:", within_y, " within_x:", within_x)
 				set_ball(ball)
 				break
 

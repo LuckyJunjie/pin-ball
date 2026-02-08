@@ -1,20 +1,20 @@
-[gd_scene load_steps=25 format=3 uid="uid://c5kd7lu42ufci"]
+[gd_scene load_steps=25 format=3 uid="uid://nt1a60sfoqfh"]
 
-[ext_resource type="Script" uid="uid://bjmsitiu0rvq0" path="res://scripts/GameManager.gd" id="1_game_manager"]
+[ext_resource type="Script" path="res://scripts/GameManager.gd" id="1_game_manager"]
 [ext_resource type="PackedScene" uid="uid://c5ppwlxkv307j" path="res://scenes/Ball.tscn" id="2_ball_scene"]
 [ext_resource type="PackedScene" uid="uid://d0513d8iwhejf" path="res://scenes/Flipper.tscn" id="3_flipper_scene"]
-[ext_resource type="Script" uid="uid://utkyqs84a4qw" path="res://scripts/UI.gd" id="4_ui_script"]
-[ext_resource type="PackedScene" path="res://scenes/Obstacle.tscn" id="5_obstacle_scene"]
-[ext_resource type="Script" uid="uid://c4kj0nie1fi41" path="res://scripts/ObstacleSpawner.gd" id="6_obstacle_spawner"]
-[ext_resource type="PackedScene" path="res://scenes/BallQueue.tscn" id="7_ball_queue_scene"]
+[ext_resource type="Script" path="res://scripts/UI.gd" id="4_ui_script"]
+[ext_resource type="PackedScene" uid="uid://yah5lr45cofj" path="res://scenes/Obstacle.tscn" id="5_obstacle_scene"]
+[ext_resource type="Script" path="res://scripts/ObstacleSpawner.gd" id="6_obstacle_spawner"]
+[ext_resource type="PackedScene" uid="uid://btdiryds5wqk" path="res://scenes/BallQueue.tscn" id="7_ball_queue_scene"]
 [ext_resource type="PackedScene" uid="uid://dg5dian3ahboq" path="res://scenes/Launcher.tscn" id="8_launcher_scene"]
 [ext_resource type="Texture2D" uid="uid://b2gbdkojs0e6f" path="res://assets/sprites/wall.png" id="10_wall_texture"]
-[ext_resource type="Texture2D" uid="uid://iusi8c5f0e7k" path="res://assets/sprites/background.png" id="11_background_texture"]
-[ext_resource type="PackedScene" path="res://scenes/Hold.tscn" id="12_hold_scene"]
+[ext_resource type="Texture2D" path="res://assets/sprites/background.png" id="11_background_texture"]
+[ext_resource type="PackedScene" uid="uid://c5d56x54nnw17" path="res://scenes/Hold.tscn" id="12_hold_scene"]
 [ext_resource type="Script" uid="uid://xpynup2qppu3" path="res://scripts/SoundManager.gd" id="13_sound_manager"]
 [ext_resource type="Script" uid="uid://ba5uv3udu01gs" path="res://scripts/Ramp.gd" id="14_ramp_script"]
 [ext_resource type="Script" path="res://scripts/MazePipeManager.gd" id="15_maze_pipe_manager"]
-[ext_resource type="TileSet" path="res://assets/tilesets/pipe_maze_tileset.tres" id="16_tileset"]
+[ext_resource type="TileSet" uid="uid://beo7xipfqad1o" path="res://assets/tilesets/pipe_maze_tileset.tres" id="16_tileset"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_wall"]
 friction = 0.3
@@ -40,13 +40,6 @@ size = Vector2(300, 20)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ramp"]
 size = Vector2(253.99286, 20)
-
-[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_pipe"]
-friction = 0.1
-bounce = 0.3
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_pipe_vertical"]
-size = Vector2(5, 300)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_pipe_back"]
 size = Vector2(35, 3)
@@ -221,7 +214,6 @@ collision_layer = 4
 collision_mask = 0
 script = ExtResource("14_ramp_script")
 ramp_length = 350.0
-ramp_angle = 30.0
 ramp_width = 60.0
 curve_points = 20
 
@@ -285,8 +277,6 @@ ball_scene = ExtResource("2_ball_scene")
 [node name="MazePipe" type="TileMapLayer" parent="PipeGuide"]
 tile_set = ExtResource("16_tileset")
 script = ExtResource("15_maze_pipe_manager")
-default_maze_layout = "level_1"
-tile_size = 32
 
 [node name="PipeBack" type="StaticBody2D" parent="PipeGuide"]
 position = Vector2(720, 105)
@@ -311,8 +301,6 @@ position = Vector2(720, 400)
 
 [node name="FlipperLeft" parent="Flippers" instance=ExtResource("3_flipper_scene")]
 position = Vector2(370, 480)
-rest_angle = 30.0
-pressed_angle = -10.0
 
 [node name="FlipperRight" parent="Flippers" instance=ExtResource("3_flipper_scene")]
 position = Vector2(430, 480)
@@ -345,11 +333,11 @@ Hold Space/Down: Charge Launcher
 Esc: Pause"
 
 [node name="CurrencyDisplay" type="HBoxContainer" parent="UI"]
+visible = false
 offset_left = 580.0
 offset_top = 20.0
 offset_right = 780.0
 offset_bottom = 80.0
-visible = false
 
 [node name="CoinLabel" type="Label" parent="UI/CurrencyDisplay"]
 layout_mode = 2

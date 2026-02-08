@@ -5,7 +5,7 @@ extends RigidBody2D
 
 signal ball_lost
 
-@export var respawn_y_threshold: float = 650.0  # Allow ball to fall through bottom
+@export var respawn_y_threshold: float = 680.0  # Below drain (y=660); ball_lost if falls past
 @export var initial_position: Vector2 = Vector2(400, 200)
 @export var boundary_left: float = 20.0
 @export var boundary_right: float = 780.0
@@ -13,13 +13,21 @@ signal ball_lost
 @export var boundary_bottom: float = 650.0  # Increased to allow fall-through
 
 func _get_debug_mode() -> bool:
-	"""Helper to get debug mode from GameManager"""
-	var game_manager = get_tree().get_first_node_in_group("game_manager")
-	if game_manager:
-		var debug = game_manager.get("debug_mode")
-		if debug != null:
-			return bool(debug)
-	return false
+	"""Helper to get debug mode from GameManager or GameManagerV4"""
+	# Temporary: always return true for debugging
+	return true
+	# var game_manager = get_tree().get_first_node_in_group("game_manager")
+	# if game_manager:
+	# 	var debug = game_manager.get("debug_mode")
+	# 	if debug != null:
+	# 		return bool(debug)
+	# # Fallback to GameManagerV4
+	# var game_manager_v4 = get_node_or_null("/root/GameManagerV4")
+	# if game_manager_v4:
+	# 	var debug = game_manager_v4.get("debug_mode")
+	# 	if debug != null:
+	# 		return bool(debug)
+	# return false
 
 func _ready():
 	# Add to balls group for easy access by other systems (e.g., Launcher)
@@ -110,10 +118,11 @@ func reset_ball():
 func launch_ball(force: Vector2 = Vector2(0, -500)):
 	"""Launch the ball with a given force"""
 	if _get_debug_mode():
-		print("[Ball] launch_ball() called - force: ", force, ", position: ", global_position, ", velocity before: ", linear_velocity)
-	apply_impulse(force)
-	if _get_debug_mode():
-		print("[Ball] Velocity after launch: ", linear_velocity)
+		print("[Ball] launch_ball called with force: ", force, ", freeze: ", freeze, ", position: ", global_position)
+	freeze = false  # Must unfreeze before impulse
+	sleeping = false
+	linear_velocity = Vector2.ZERO  # Clear any residual velocity
+	apply_impulse(force)  # Applies at center when position is default
 
 func add_visual_label(text: String):
 	"""Add a visual label to identify this object"""

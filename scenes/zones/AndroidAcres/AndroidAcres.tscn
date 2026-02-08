@@ -1,20 +1,54 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://scripts/v4/zones/AndroidAcresV4.gd" id="1_android_acres_script"]
+[ext_resource type="PackedScene" path="res://scenes/zones/AndroidAcres/AndroidBumperA.tscn" id="2_android_bumper_a"]
+[ext_resource type="PackedScene" path="res://scenes/zones/AndroidAcres/AndroidBumperB.tscn" id="3_android_bumper_b"]
+[ext_resource type="PackedScene" path="res://scenes/zones/AndroidAcres/AndroidBumperCow.tscn" id="4_android_bumper_cow"]
+[ext_resource type="Texture2D" path="res://assets/sprites/android/spaceship/saucer.png" id="5_spaceship_tex"]
+[ext_resource type="Texture2D" path="res://assets/sprites/android/ramp/main.png" id="6_ramp_tex"]
+
+[sub_resource type="RectangleShape2D" id="Rect_ramp"]
+size = Vector2(80, 25)
+
+[sub_resource type="RectangleShape2D" id="Rect_spaceship"]
+size = Vector2(40, 35)
 
 [node name="AndroidAcres" type="Node2D"]
 script = ExtResource("1_android_acres_script")
 
 [node name="SpaceshipRamp" type="Area2D" parent="."]
+position = Vector2(100, 50)
+collision_layer = 8
+collision_mask = 1
+
+[node name="Sprite2D" type="Sprite2D" parent="SpaceshipRamp"]
+position = Vector2(40, 12)
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("6_ramp_tex")
+centered = true
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="SpaceshipRamp"]
+shape = SubResource("Rect_ramp")
 
-[node name="AndroidBumperA" type="RigidBody2D" parent="."]
+[node name="AndroidBumperA" parent="." instance=ExtResource("2_android_bumper_a")]
+position = Vector2(124, 157.5)
 
-[node name="AndroidBumperB" type="RigidBody2D" parent="."]
+[node name="AndroidBumperB" parent="." instance=ExtResource("3_android_bumper_b")]
+position = Vector2(85.5, 85)
 
-[node name="AndroidBumperCow" type="RigidBody2D" parent="."]
+[node name="AndroidBumperCow" parent="." instance=ExtResource("4_android_bumper_cow")]
+position = Vector2(146.5, 85)
 
 [node name="AndroidSpaceship" type="Area2D" parent="."]
+position = Vector2(117.5, 7.5)
+collision_layer = 8
+collision_mask = 1
+
+[node name="Sprite2D" type="Sprite2D" parent="AndroidSpaceship"]
+position = Vector2(20, 17)
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("5_spaceship_tex")
+centered = true
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="AndroidSpaceship"]
+shape = SubResource("Rect_spaceship")

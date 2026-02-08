@@ -37,6 +37,10 @@ func _ready() -> void:
 	add_to_group("bumpers")
 	add_to_group("bumper_%s" % bumper_id)
 	
+	# Disable gravity and freeze bumper (should not move)
+	gravity_scale = 0.0
+	freeze = true
+	
 	# Set up hit cooldown timer
 	if not hit_cooldown_timer:
 		hit_cooldown_timer = Timer.new()

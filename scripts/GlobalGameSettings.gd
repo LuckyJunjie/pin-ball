@@ -9,7 +9,7 @@ var equipped_items: Dictionary = {
 	"flipper": "flipper_standard"
 }
 
-var debug_mode: bool = false
+var debug_mode: bool = true
 var sound_enabled: bool = true
 var music_enabled: bool = true
 var volume: float = 1.0

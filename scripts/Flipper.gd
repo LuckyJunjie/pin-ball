@@ -67,6 +67,13 @@ func _ready():
 	target_angle = rest_angle
 	rotation_degrees = rest_angle
 	
+	# v4: Use Flutter parity textures - left.png for left, right.png for right
+	var visual = get_node_or_null("Visual")
+	if visual is Sprite2D:
+		var tex = load("res://assets/sprites/flipper/right.png") as Texture2D if flipper_side == "right" else load("res://assets/sprites/flipper/left.png") as Texture2D
+		if tex:
+			visual.texture = tex
+	
 	# Configure physics material for bounce (v3.0: enhanced values)
 	var physics_material = PhysicsMaterial.new()
 	physics_material.bounce = elasticity

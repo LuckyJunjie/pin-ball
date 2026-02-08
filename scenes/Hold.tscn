@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3 uid="uid://hold_scene_123"]
+[gd_scene load_steps=3 format=3 uid="uid://c5d56x54nnw17"]
 
 [ext_resource type="Script" path="res://scripts/Hold.gd" id="1_hold_script"]
 
@@ -7,10 +7,7 @@ radius = 20.0
 
 [node name="Hold" type="Area2D"]
 collision_layer = 0
-collision_mask = 1
 script = ExtResource("1_hold_script")
-points_value = 10
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_hold")
-

@@ -97,7 +97,7 @@ func clear_cache() -> void:
 func get_current_theme_assets() -> Dictionary:
 	## Get assets for currently selected theme
 	var backbox = get_node_or_null("/root/BackboxManagerV4")
-	if backbox and backbox.has_method("get_selected_character_key"):
+	if backbox:
 		var theme_key = backbox.selected_character_key
 		return load_theme_assets(theme_key)
 	
