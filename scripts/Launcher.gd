@@ -22,22 +22,19 @@ var charge_meter_node: ProgressBar = null
 var capture_cooldown: float = 0.0
 
 func _get_debug_mode() -> bool:
-	"""Helper to get debug mode from GameManager or GameManagerV4"""
-	# Temporary: always return true for debugging
-	return true
-	# var game_manager = get_tree().get_first_node_in_group("game_manager")
-	# if game_manager:
-	# 	# Access debug_mode property directly (it's an @export var in GameManager)
-	# 	var debug = game_manager.get("debug_mode")
-	# 	if debug != null:
-	# 		return bool(debug)
-	# # Fallback to GameManagerV4
-	# var game_manager_v4 = get_node_or_null("/root/GameManagerV4")
-	# if game_manager_v4:
-	# 	var debug = game_manager_v4.get("debug_mode")
-	# 	if debug != null:
-	# 		return bool(debug)
-	# return false
+	"""Helper to get debug mode from GlobalGameSettings"""
+	# Check GlobalGameSettings singleton (autoload)
+	if has_node("/root/GlobalGameSettings"):
+		var global_settings = get_node("/root/GlobalGameSettings")
+		if global_settings.has_method("get") and global_settings.get("debug_mode") != null:
+			return bool(global_settings.debug_mode)
+	# Fallback to checking game_manager group
+	var game_manager = get_tree().get_first_node_in_group("game_manager")
+	if game_manager:
+		var debug = game_manager.get("debug_mode")
+		if debug != null:
+			return bool(debug)
+	return false
 
 func _ready():
 	if _get_debug_mode():
@@ -129,7 +126,7 @@ func set_ball(ball: RigidBody2D):
 		print("[Launcher] set_ball called with ball: ", ball, " at launcher_position: ", launcher_position)
 	current_ball = ball
 	if ball:
-		var ball_pos = launcher_position + Vector2(-3, -35)
+		var ball_pos = launcher_position + Vector2(-3, -45)
 		if _get_debug_mode():
 			print("[Launcher] Placing ball at position: ", ball_pos, " (global: ", ball.global_position, ")")
 		ball.global_position = ball_pos

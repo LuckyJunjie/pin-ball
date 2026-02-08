@@ -12,22 +12,22 @@ signal ball_lost
 @export var boundary_top: float = 20.0
 @export var boundary_bottom: float = 650.0  # Increased to allow fall-through
 
+var has_emitted_lost: bool = false  # Prevent multiple ball_lost emissions
+
 func _get_debug_mode() -> bool:
-	"""Helper to get debug mode from GameManager or GameManagerV4"""
-	# Temporary: always return true for debugging
-	return true
-	# var game_manager = get_tree().get_first_node_in_group("game_manager")
-	# if game_manager:
-	# 	var debug = game_manager.get("debug_mode")
-	# 	if debug != null:
-	# 		return bool(debug)
-	# # Fallback to GameManagerV4
-	# var game_manager_v4 = get_node_or_null("/root/GameManagerV4")
-	# if game_manager_v4:
-	# 	var debug = game_manager_v4.get("debug_mode")
-	# 	if debug != null:
-	# 		return bool(debug)
-	# return false
+	"""Helper to get debug mode from GlobalGameSettings"""
+	# Check GlobalGameSettings singleton (autoload)
+	if has_node("/root/GlobalGameSettings"):
+		var global_settings = get_node("/root/GlobalGameSettings")
+		if global_settings.has_method("get") and global_settings.get("debug_mode") != null:
+			return bool(global_settings.debug_mode)
+	# Fallback to checking game_manager group
+	var game_manager = get_tree().get_first_node_in_group("game_manager")
+	if game_manager:
+		var debug = game_manager.get("debug_mode")
+		if debug != null:
+			return bool(debug)
+	return false
 
 func _ready():
 	# Add to balls group for easy access by other systems (e.g., Launcher)
@@ -38,6 +38,10 @@ func _ready():
 	linear_damp = 0.02  # Very low damping for longer ball travel across playfield
 	angular_damp = 0.02
 	mass = 0.4  # Slightly lighter ball for better movement
+	
+	# Enable continuous collision detection to prevent tunneling through walls
+	continuous_cd = RigidBody2D.CCD_MODE_CAST_SHAPE
+	max_contacts_reported = 4
 	
 	# Set collision layers
 	collision_layer = 1  # Ball layer
@@ -73,10 +77,14 @@ func _ready():
 			var visible_rect = viewport.get_visible_rect()
 			print("[Ball] Viewport visible rect: ", visible_rect)
 			print("[Ball] Ball position in viewport: ", visible_rect.has_point(global_position))
+		
+		# Debug CCD and collision settings
+		print("[Ball] CCD mode: ", continuous_cd, ", max contacts: ", max_contacts_reported)
+		print("[Ball] Collision layer: ", collision_layer, ", mask: ", collision_mask)
 
 func _physics_process(_delta):
-	# Debug: Log ball position periodically (every 60 frames ~ 1 second at 60fps)
-	if _get_debug_mode() and Engine.get_process_frames() % 60 == 0:
+	# Debug: Log ball position periodically (every 300 frames ~ 5 seconds at 60fps)
+	if _get_debug_mode() and Engine.get_process_frames() % 300 == 0:
 		print("[Ball] Position: ", global_position, ", Velocity: ", linear_velocity, ", Visible: ", visible)
 	
 	# Ensure ball stays within horizontal boundaries (safety check)
@@ -91,7 +99,7 @@ func _physics_process(_delta):
 	
 	# If ball escaped horizontally or vertically (top only), push it back
 	if global_position.x != clamped_x or (global_position.y < boundary_top and global_position.y != clamped_y):
-		if _get_debug_mode():
+		if _get_debug_mode() and Engine.get_process_frames() % 300 == 0:
 			print("[Ball] WARNING: Ball escaped boundaries! Position: ", global_position, ", Clamped to: ", Vector2(clamped_x, clamped_y))
 		global_position = Vector2(clamped_x, clamped_y)
 		# Apply a small correction impulse away from boundary
@@ -103,9 +111,10 @@ func _physics_process(_delta):
 			apply_impulse(Vector2(0, 50))
 	
 	# Check if ball fell below the table (triggers ball lost)
-	if global_position.y > respawn_y_threshold:
+	if global_position.y > respawn_y_threshold and not has_emitted_lost:
 		if _get_debug_mode():
 			print("[Ball] Ball lost! Position: ", global_position, " (threshold: ", respawn_y_threshold, ")")
+		has_emitted_lost = true
 		ball_lost.emit()
 
 func reset_ball():
@@ -114,6 +123,7 @@ func reset_ball():
 	linear_velocity = Vector2.ZERO
 	angular_velocity = 0.0
 	sleeping = false
+	has_emitted_lost = false
 
 func launch_ball(force: Vector2 = Vector2(0, -500)):
 	"""Launch the ball with a given force"""

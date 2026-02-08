@@ -125,6 +125,9 @@ func add_score(points: int) -> void:
 		force_save()
 
 func on_round_lost() -> void:
+	# Prevent multiple calls and ensure we're in playing state
+	if status != Status.PLAYING:
+		return
 	var final_round = round_score * multiplier
 	total_score = mini(total_score + final_round, MAX_SCORE)
 	round_score = 0

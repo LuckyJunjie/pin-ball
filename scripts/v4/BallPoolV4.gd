@@ -265,6 +265,13 @@ func _reset_ball_state(ball: RigidBody2D) -> void:
 func _on_ball_lost(ball: RigidBody2D) -> void:
 	# When a ball is lost (e.g., drained), return it to the pool
 	return_ball(ball)
+	# After returning, check if no active balls remain
+	if get_active_ball_count() == 0:
+		var gm = get_node_or_null("/root/GameManagerV4")
+		if gm and gm.has_method("on_round_lost"):
+			# Ensure game is in playing state before calling round lost
+			if gm.has_method("get_status") and gm.get_status() == gm.Status.PLAYING:
+				gm.on_round_lost()
 
 func _update_performance_metrics() -> void:
 	# Calculate estimated time saved (assuming 0.5ms per instantiation)

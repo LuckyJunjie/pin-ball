@@ -10,7 +10,13 @@ extends StaticBody2D
 @export var curve_type: String = "catmull"  # "catmull", "bezier", or "smooth"
 
 func _get_debug_mode() -> bool:
-	"""Helper to get debug mode from GameManager"""
+	"""Helper to get debug mode from GlobalGameSettings"""
+	# Check GlobalGameSettings singleton (autoload)
+	if has_node("/root/GlobalGameSettings"):
+		var global_settings = get_node("/root/GlobalGameSettings")
+		if global_settings.has_method("get") and global_settings.get("debug_mode") != null:
+			return bool(global_settings.debug_mode)
+	# Fallback to checking game_manager group
 	var game_manager = get_tree().get_first_node_in_group("game_manager")
 	if game_manager:
 		var debug = game_manager.get("debug_mode")
