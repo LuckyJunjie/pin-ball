@@ -14,6 +14,7 @@ var initials_letter2: OptionButton = null
 var initials_letter3: OptionButton = null
 var initials_submit_btn: BaseButton = null
 var multiplier_label: Label = null
+var initials_character_icon: TextureRect = null  # C.5: character icon in initials panel
 
 const ROUND_LIT := Color(1.0, 0.9, 0.2, 1.0)
 const ROUND_DIM := Color(0.4, 0.4, 0.4, 1.0)
@@ -38,6 +39,16 @@ func _ready() -> void:
 	initials_letter3 = get_node_or_null("Backbox/BackboxContent/InitialsPanel/VBox/Letters/HBox/Letter3")
 	initials_submit_btn = get_node_or_null("Backbox/BackboxContent/InitialsPanel/VBox/SubmitButton")
 	multiplier_label = get_node_or_null("MultiplierLabel")
+	var initials_vbox = get_node_or_null("Backbox/BackboxContent/InitialsPanel/VBox")
+	if initials_vbox and not initials_vbox.get_node_or_null("CharacterIcon"):
+		var icon = TextureRect.new()
+		icon.name = "CharacterIcon"
+		icon.custom_minimum_size = Vector2(32, 32)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		initials_vbox.add_child(icon)
+		initials_vbox.move_child(icon, 0)
+	initials_character_icon = get_node_or_null("Backbox/BackboxContent/InitialsPanel/VBox/CharacterIcon") as TextureRect
 	var gm = get_node_or_null("/root/GameManagerV4")
 	if gm:
 		gm.scored.connect(_on_scored)
@@ -111,24 +122,43 @@ func _update_backbox_visibility() -> void:
 	var backbox = get_node_or_null("/root/BackboxManagerV4")
 	if not backbox:
 		return
+	# Leaderboard panel: show for success, loading, or failure (C.1)
 	if backbox_leaderboard:
-		backbox_leaderboard.visible = (backbox.current_state == BackboxManagerV4.State.LEADERBOARD_SUCCESS)
-		if backbox.current_state == BackboxManagerV4.State.LEADERBOARD_SUCCESS:
+		var show_leaderboard = backbox.current_state in [
+			BackboxManagerV4.State.LEADERBOARD_SUCCESS,
+			BackboxManagerV4.State.LOADING,
+			BackboxManagerV4.State.LEADERBOARD_FAILURE
+		]
+		backbox_leaderboard.visible = show_leaderboard
+		if show_leaderboard:
 			var list_label = get_node_or_null("Backbox/BackboxContent/LeaderboardPanel/VBox/List")
 			if list_label is Label:
-				var lines: PackedStringArray = []
-				var rank := 1
-				for e in backbox.leaderboard_entries:
-					var r := "1st" if rank == 1 else ("2nd" if rank == 2 else ("3rd" if rank == 3 else str(rank) + "th"))
-					lines.append("%s  %s  %s" % [r, _format_score(e.get("score", 0)), e.get("initials", "")])
-					rank += 1
-				list_label.text = "\n".join(lines)
+				if backbox.current_state == BackboxManagerV4.State.LOADING:
+					list_label.text = "Loading..."
+				elif backbox.current_state == BackboxManagerV4.State.LEADERBOARD_FAILURE:
+					list_label.text = "Failed to load leaderboard."
+				else:
+					var lines: PackedStringArray = []
+					var rank := 1
+					for e in backbox.leaderboard_entries:
+						var r := "1st" if rank == 1 else ("2nd" if rank == 2 else ("3rd" if rank == 3 else str(rank) + "th"))
+						lines.append("%s  %s  %s" % [r, _format_score(e.get("score", 0)), e.get("initials", "")])
+						rank += 1
+					list_label.text = "\n".join(lines)
 	if backbox_initials:
-		backbox_initials.visible = (backbox.current_state == BackboxManagerV4.State.INITIALS_FORM)
-		if backbox.current_state == BackboxManagerV4.State.INITIALS_FORM:
+		backbox_initials.visible = (backbox.current_state == BackboxManagerV4.State.INITIALS_FORM or backbox.current_state == BackboxManagerV4.State.INITIALS_FAILURE)
+		if backbox.current_state == BackboxManagerV4.State.INITIALS_FORM or backbox.current_state == BackboxManagerV4.State.INITIALS_FAILURE:
 			var score_lbl = get_node_or_null("Backbox/BackboxContent/InitialsPanel/VBox/ScoreValue")
 			if score_lbl is Label:
 				score_lbl.text = _format_score(backbox.initials_score)
+			# C.5: Show character icon in initials panel
+			if initials_character_icon and CharacterThemeManagerV4:
+				var tex = CharacterThemeManagerV4.get_theme_asset("leaderboard_icon")
+				if tex:
+					initials_character_icon.texture = tex
+					initials_character_icon.visible = true
+				else:
+					initials_character_icon.visible = false
 	if backbox_game_over_info:
 		backbox_game_over_info.visible = (backbox.current_state == BackboxManagerV4.State.INITIALS_SUCCESS)
 

@@ -120,7 +120,7 @@ Alternatively, all three can be sub-scenes or UI layers controlled by one root (
 **Signals**:
 - `scored(points: int)`
 - `round_lost()`
-- `bonus_activated(bonus: String)`
+- `bonus_activated(bonus: Bonus)` – implementation uses enum (GOOGLE_WORD, DASH_NEST, etc.).
 - `multiplier_increased()`
 - `game_over()`
 - `game_started()`
@@ -129,7 +129,7 @@ Alternatively, all three can be sub-scenes or UI layers controlled by one root (
 - `add_score(points: int)` – only if status == playing; emit scored, update round_score.
 - `on_round_lost()` – total_score += round_score * multiplier; round_score = 0; multiplier = 1; rounds -= 1; if rounds == 0 emit game_over; else request new ball.
 - `increase_multiplier()` – multiplier = min(6, multiplier + 1); emit multiplier_increased.
-- `add_bonus(bonus: String)` – append to bonus_history; emit bonus_activated.
+- `add_bonus(bonus: Bonus)` – implementation uses GameManagerV4.Bonus enum; append to bonus_history; emit bonus_activated.
 - `start_game()` – status = playing; rounds = 3; etc.; emit game_started; spawn ball.
 - `display_score() -> int` – return round_score + total_score (capped).
 

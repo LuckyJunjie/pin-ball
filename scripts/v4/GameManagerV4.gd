@@ -27,6 +27,9 @@ const BACKUP_PATH: String = "user://saves/v4.0_save_backup.json"
 const AUTO_SAVE_INTERVAL: float = 30.0  # seconds
 const MIN_SCORE_CHANGE_FOR_AUTO_SAVE: int = 100  # Minimum score change to trigger auto-save
 
+# Use script reference to call BallPoolV4 static methods (autoload name refers to instance)
+const BallPoolScript := preload("res://scripts/v4/BallPoolV4.gd")
+
 var round_score: int = 0
 var total_score: int = 0
 var multiplier: int = 1
@@ -34,7 +37,13 @@ var rounds: int = INITIAL_ROUNDS
 var bonus_history: Array[Bonus] = []
 var status: Status = Status.WAITING
 var balls_container: Node2D = null
-var ball_scene: PackedScene = null
+var ball_scene: PackedScene = null:
+	set(value):
+		ball_scene = value
+		_ball_scene_ready = true
+		# Try to initialize ball pool when ball_scene is set
+		if balls_container:
+			call_deferred("_initialize_ball_pool")
 var launcher_node: Node = null  # Set by MainV4; used to call set_ball after spawn
 var launcher_spawn_position: Vector2 = Vector2(400, 500)
 var bonus_ball_spawn_position: Vector2 = Vector2(400, 300)
@@ -45,6 +54,9 @@ var bonus_ball_timer: float = -1.0
 var auto_save_timer: float = 0.0
 var last_saved_score: int = 0
 var is_save_system_enabled: bool = true
+
+# Initialization state tracking
+var _ball_scene_ready: bool = false  # Tracks if ball_scene is ready for initialization
 
 # Zone tracking for multiplier system
 var zone_ramp_hits: Dictionary = {
@@ -60,6 +72,7 @@ var selected_character_theme: String = "sparky"  # Default theme
 
 func _ready() -> void:
 	add_to_group("game_manager_v4")
+	add_to_group("game_manager")
 	
 	# Initialize ball pool when ball scene and container are set
 	call_deferred("_initialize_ball_pool")
@@ -89,7 +102,7 @@ func _process(delta: float) -> void:
 func _initialize_ball_pool() -> void:
 	# Initialize BallPoolV4 if ball scene and container are available
 	if ball_scene and balls_container:
-		var ball_pool = BallPoolV4.get_instance()
+		var ball_pool = BallPoolScript.get_instance()
 		if ball_pool and not ball_pool.is_initialized():
 			ball_pool.initialize(ball_scene, balls_container)
 			print("GameManagerV4: BallPoolV4 initialized")
@@ -101,7 +114,7 @@ func _initialize_ball_pool() -> void:
 func _ensure_ball_pool_initialized() -> void:
 	# Ensure BallPoolV4 is initialized (re-inits if container was freed by scene change)
 	if ball_scene and balls_container:
-		var ball_pool = BallPoolV4.get_instance()
+		var ball_pool = BallPoolScript.get_instance()
 		if ball_pool:
 			ball_pool.initialize(ball_scene, balls_container)
 		else:
@@ -128,6 +141,24 @@ func on_round_lost() -> void:
 	# Prevent multiple calls and ensure we're in playing state
 	if status != Status.PLAYING:
 		return
+	
+	# Get combo count before register_drain (which resets it)
+	var combo_sys = get_tree().get_first_node_in_group("combo_system")
+	var combo_count_at_drain := 0
+	if combo_sys and "combo_count" in combo_sys:
+		combo_count_at_drain = combo_sys.combo_count
+	
+	# Collect combo bonus and add to round score
+	var combo_bonus = _collect_combo_bonus()
+	round_score += combo_bonus
+	
+	# Notify achievement and statistics systems
+	if combo_count_at_drain > 0:
+		if AchievementSystemV4:
+			AchievementSystemV4.on_combo_achieved(combo_count_at_drain)
+		if StatisticsTrackerV4:
+			StatisticsTrackerV4.on_combo_changed(combo_count_at_drain)
+	
 	var final_round = round_score * multiplier
 	total_score = mini(total_score + final_round, MAX_SCORE)
 	round_score = 0
@@ -142,6 +173,11 @@ func on_round_lost() -> void:
 	
 	if rounds <= 0:
 		status = Status.GAME_OVER
+		var final_score = display_score()
+		if AchievementSystemV4:
+			AchievementSystemV4.on_game_ended(final_score)
+		if StatisticsTrackerV4:
+			StatisticsTrackerV4.on_game_ended(final_score)
 		game_over.emit()
 	else:
 		_spawn_ball_at_launcher()
@@ -151,16 +187,49 @@ func increase_multiplier() -> void:
 		return
 	if multiplier >= MAX_MULTIPLIER:
 		return
+	
+	var old_multiplier = multiplier
 	multiplier += 1
 	multiplier_increased.emit()
+	
+	# Notify achievement and statistics systems
+	if AchievementSystemV4:
+		AchievementSystemV4.on_multiplier_changed(multiplier)
+	if StatisticsTrackerV4:
+		StatisticsTrackerV4.on_multiplier_changed(multiplier)
+	
+	# Visual feedback
+	_show_multiplier_effect(old_multiplier, multiplier)
 	
 	# Auto-save on multiplier increase
 	if is_save_system_enabled:
 		force_save()
 
+func _show_multiplier_effect(from: int, to: int) -> void:
+	var particles = get_tree().get_first_node_in_group("particle_system")
+	if particles and particles.has_method("spawn_multiplier_effect"):
+		particles.spawn_multiplier_effect(to)
+	
+	var audio = get_tree().get_first_node_in_group("sound_manager")
+	if audio and audio.has_method("play_multiplier_sound"):
+		audio.play_multiplier_sound(to)
+
 func add_bonus(bonus: Bonus) -> void:
 	bonus_history.append(bonus)
 	bonus_activated.emit(bonus)
+	
+	# Notify achievement system (expects string: GOOGLE_WORD, DASH_NEST, etc.)
+	var bonus_name := _bonus_enum_to_string(bonus)
+	if AchievementSystemV4:
+		AchievementSystemV4.on_bonus_earned(bonus_name)
+	# Notify statistics (zone-specific)
+	if StatisticsTrackerV4:
+		match bonus:
+			Bonus.GOOGLE_WORD: StatisticsTrackerV4.on_google_word()
+			Bonus.DASH_NEST: StatisticsTrackerV4.on_dash_nest()
+			Bonus.DINO_CHOMP: StatisticsTrackerV4.on_dino_chomp()
+			Bonus.SPARKY_TURBO_CHARGE: StatisticsTrackerV4.on_sparky_turbo()
+			Bonus.ANDROID_SPACESHIP: StatisticsTrackerV4.on_android_bonus()
 	
 	# Auto-save on bonus activation
 	if is_save_system_enabled:
@@ -171,6 +240,10 @@ func add_bonus(bonus: Bonus) -> void:
 		Bonus.GOOGLE_WORD, Bonus.DASH_NEST:
 			# Start bonus ball timer
 			bonus_ball_timer = BONUS_BALL_DELAY
+			if AchievementSystemV4:
+				AchievementSystemV4.on_bonus_ball_earned()
+			if StatisticsTrackerV4:
+				StatisticsTrackerV4.on_bonus_ball_earned()
 		Bonus.ANDROID_SPACESHIP:
 			# Add large score bonus
 			add_score(200000)
@@ -220,9 +293,25 @@ func reset_zone_tracking() -> void:
 	for zone in zone_ramp_hits:
 		zone_ramp_hits[zone] = 0
 
+func _bonus_enum_to_string(b: Bonus) -> String:
+	match b:
+		Bonus.GOOGLE_WORD: return "GOOGLE_WORD"
+		Bonus.DASH_NEST: return "DASH_NEST"
+		Bonus.SPARKY_TURBO_CHARGE: return "SPARKY_TURBO_CHARGE"
+		Bonus.DINO_CHOMP: return "DINO_CHOMP"
+		Bonus.ANDROID_SPACESHIP: return "ANDROID_SPACESHIP"
+	return ""
+
+func _collect_combo_bonus() -> int:
+	## Collect and add combo bonus to round score
+	var combo = get_tree().get_first_node_in_group("combo_system")
+	if combo and combo.has_method("register_drain"):
+		return combo.register_drain()
+	return 0
+
 func _return_all_balls_to_pool() -> void:
 	## Return all active balls to the pool (for game reset)
-	var ball_pool = BallPoolV4.get_instance()
+	var ball_pool = BallPoolScript.get_instance()
 	if ball_pool and ball_pool.is_initialized():
 		# Get all balls from container and return them to pool
 		if balls_container:
@@ -249,12 +338,18 @@ func start_game() -> void:
 		print("GameManagerV4: Calling force_save() from start_game()")
 		force_save()
 	
+	# Notify achievement and statistics systems
+	if AchievementSystemV4:
+		AchievementSystemV4.on_game_started()
+	if StatisticsTrackerV4:
+		StatisticsTrackerV4.on_game_started()
+	
 	game_started.emit()
 	_spawn_ball_at_launcher()
 
 func get_ball_count() -> int:
 	# Try to use BallPoolV4 if available for accurate active ball count
-	var ball_pool = BallPoolV4.get_instance()
+	var ball_pool = BallPoolScript.get_instance()
 	if ball_pool and ball_pool.is_initialized():
 		return ball_pool.get_active_ball_count()
 	
@@ -274,7 +369,7 @@ func _spawn_ball_at_launcher() -> void:
 	# Ensure BallPoolV4 is initialized before attempting to use it
 	_ensure_ball_pool_initialized()
 	
-	var ball_pool = BallPoolV4.get_instance()
+	var ball_pool = BallPoolScript.get_instance()
 	var ball: RigidBody2D = null
 	if ball_pool and ball_pool.is_initialized():
 		ball = ball_pool.spawn_ball_at_position(launcher_spawn_position, Vector2.ZERO, true)  # freeze=true for launcher ball
@@ -294,6 +389,7 @@ func _spawn_ball_at_launcher() -> void:
 			ball.reset_ball()
 		if ball.get("initial_position") != null:
 			ball.initial_position = launcher_spawn_position
+		_apply_character_theme_to_ball(ball)
 		# Notify Launcher so it can launch the ball
 		if launcher_node and launcher_node.has_method("set_ball"):
 			launcher_node.set_ball(ball)
@@ -302,10 +398,11 @@ func _spawn_bonus_ball() -> void:
 	if not ball_scene or not balls_container:
 		return
 	
+	var ball: RigidBody2D = null
 	# Try to use BallPoolV4 if available
-	var ball_pool = BallPoolV4.get_instance()
+	var ball_pool = BallPoolScript.get_instance()
 	if ball_pool and ball_pool.is_initialized():
-		var ball = ball_pool.spawn_ball_at_position(bonus_ball_spawn_position, bonus_ball_impulse)
+		ball = ball_pool.spawn_ball_at_position(bonus_ball_spawn_position, bonus_ball_impulse)
 		if ball:
 			# Connect ball lost signal
 			if ball.has_signal("ball_lost") and not ball.ball_lost.is_connected(_on_ball_lost):
@@ -315,7 +412,7 @@ func _spawn_bonus_ball() -> void:
 			push_warning("GameManagerV4: BallPoolV4 failed to provide bonus ball, falling back to direct instantiation")
 	
 	# Fallback to direct instantiation if pool is not available
-	var ball: RigidBody2D = ball_scene.instantiate()
+	ball = ball_scene.instantiate() as RigidBody2D
 	balls_container.add_child(ball)
 	ball.global_position = bonus_ball_spawn_position
 	if ball.has_method("reset_ball"):
@@ -324,12 +421,24 @@ func _spawn_bonus_ball() -> void:
 		ball.initial_position = bonus_ball_spawn_position
 	if ball.has_signal("ball_lost"):
 		ball.ball_lost.connect(_on_ball_lost)
+	_apply_character_theme_to_ball(ball)
 	ball.freeze = false
 	ball.apply_impulse(bonus_ball_impulse)
 
 func _on_ball_lost() -> void:
 	# Drain removes ball; round_lost is triggered by DrainV4 when no balls left
 	pass
+
+func _apply_character_theme_to_ball(ball: RigidBody2D) -> void:
+	# C.5: Apply current character theme ball texture (GDD §5.4)
+	if not CharacterThemeManagerV4:
+		return
+	var tex = CharacterThemeManagerV4.get_theme_asset("ball")
+	if not tex:
+		return
+	var visual = ball.get_node_or_null("Visual")
+	if visual is Sprite2D:
+		visual.texture = tex
 
 # ============================================
 # Save/Load System Implementation

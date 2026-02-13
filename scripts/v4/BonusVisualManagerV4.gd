@@ -1,5 +1,6 @@
 extends Node2D
 ## v4.0 Bonus visual feedback system. Listens to GameManagerV4 bonus signals and shows visual effects.
+## Optional: not instanced in MainV4; can be added to a scene if needed.
 
 # References
 @onready var bonus_particles: CPUParticles2D = $BonusParticles

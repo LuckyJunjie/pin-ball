@@ -115,6 +115,12 @@ func _activate_turbo_charge() -> void:
 	var points = 100000
 	GameManagerV4.add_score(points)
 	
+	# Trigger screen shake
+	_trigger_screen_shake("extreme")
+	
+	# Spawn particles
+	_spawn_particles()
+	
 	# Visual feedback
 	_show_turbo_charge_activation()
 	
@@ -178,6 +184,27 @@ func _update_sparky_animatronic() -> void:
 	if sparky_animatronic and sparky_animatronic.has_method("set_charge_level"):
 		var charge_level = min(turbo_charge_progress, TURBO_CHARGE_REQUIRED)
 		sparky_animatronic.set_charge_level(charge_level)
+
+func _trigger_screen_shake(type: String = "medium") -> void:
+	var screen_shake = get_tree().get_first_node_in_group("screen_shake")
+	if screen_shake:
+		match type:
+			"light":
+				screen_shake.shake_light()
+			"medium":
+				screen_shake.shake_medium()
+			"heavy":
+				screen_shake.shake_heavy()
+			"extreme":
+				screen_shake.shake_extreme()
+
+func _spawn_particles() -> void:
+	var particles = get_tree().get_first_node_in_group("particle_system")
+	if particles and particles.has_method("spawn_bonus_effect"):
+		var center_pos = Vector2(400, 150)  # Approximate center
+		if sparky_animatronic:
+			center_pos = sparky_animatronic.global_position
+		particles.spawn_bonus_effect(center_pos)
 
 
 func reset_zone() -> void:

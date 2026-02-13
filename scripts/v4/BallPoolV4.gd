@@ -41,6 +41,7 @@ static var _instance: BallPoolV4 = null
 
 func _ready() -> void:
 	add_to_group("ball_pool_v4")
+	add_to_group("ball_pool")
 	
 	# Singleton pattern
 	if _instance == null:
@@ -158,6 +159,10 @@ func get_available_ball_count() -> int:
 func get_total_pool_size() -> int:
 	return _pool_size
 
+## Alias for PerformanceMonitorV4 and other callers expecting get_pool_size.
+func get_pool_size() -> int:
+	return get_total_pool_size()
+
 ## Get performance metrics.
 func get_performance_metrics() -> Dictionary:
 	return _metrics.duplicate()
@@ -254,6 +259,10 @@ func _reset_ball_state(ball: RigidBody2D) -> void:
 	# Reset ball-specific properties
 	if ball.has_method("reset_ball"):
 		ball.reset_ball()
+	else:
+		# Fallback: manually reset has_emitted_lost flag if reset_ball not available
+		if ball.get("has_emitted_lost") != null:
+			ball.has_emitted_lost = false
 	
 	# Disconnect and reconnect ball lost signal
 	if ball.has_signal("ball_lost"):

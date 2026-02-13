@@ -7,10 +7,12 @@ var ball_pool: Node = null
 
 
 func before_all():
-	# Load autoloads if they exist
-	game_manager = autoqfree(load("res://scripts/v4/GameManagerV4.gd").new())
-	backbox_manager = autoqfree(load("res://scripts/v4/BackboxManagerV4.gd").new())
-	ball_pool = autoqfree(load("res://scripts/v4/BallPoolV4.gd").new())
+	# Use autoload instances so we don't create duplicate singletons
+	game_manager = get_node("/root/GameManagerV4")
+	backbox_manager = get_node("/root/BackboxManagerV4")
+	ball_pool = BallPoolV4.get_instance()
+	if game_manager and game_manager.has_method("set") and game_manager.get("is_save_system_enabled") != null:
+		game_manager.is_save_system_enabled = false
 
 
 func test_game_manager_v4_exists():

@@ -126,6 +126,12 @@ func _on_bumper_hit(ball: Node) -> void:
 	# Play sound
 	_play_hit_sound()
 	
+	# Trigger screen shake
+	_trigger_screen_shake()
+	
+	# Register combo
+	_register_combo()
+	
 	# Visual feedback
 	_show_hit_feedback()
 	
@@ -166,18 +172,40 @@ func _update_visual_state() -> void:
 	# Could add more visual effects here (particles, animation, etc.)
 
 func _play_hit_sound() -> void:
-	var sm = get_tree().get_first_node_in_group("sound_manager")
-	if sm and sm.has_method("play_sound"):
-		# Play different sounds based on bumper type
+	var audio = get_tree().get_first_node_in_group("sound_manager")
+	if audio and audio.has_method("play_bumper_hit"):
+		var zone_type = ""
 		match bumper_type:
 			BumperType.ANDROID:
-				sm.play_sound("android_bumper_hit")
+				zone_type = "android"
 			BumperType.DASH:
-				sm.play_sound("dash_bumper_hit")
+				zone_type = "dash"
 			BumperType.SPARKY:
-				sm.play_sound("sparky_bumper_hit")
+				zone_type = "sparky"
+		audio.play_bumper_hit(zone_type)
+	elif audio and audio.has_method("play_sound"):
+		match bumper_type:
+			BumperType.ANDROID:
+				audio.play_sound("android_bumper_hit")
+			BumperType.DASH:
+				audio.play_sound("dash_bumper_hit")
+			BumperType.SPARKY:
+				audio.play_sound("sparky_bumper_hit")
 			_:
-				sm.play_sound("bumper_hit")
+				audio.play_sound("bumper_hit")
+
+func _trigger_screen_shake() -> void:
+	var screen_shake = get_tree().get_first_node_in_group("screen_shake")
+	if screen_shake and screen_shake.has_method("shake_light"):
+		screen_shake.shake_light()
+
+func _register_combo() -> void:
+	var combo = get_tree().get_first_node_in_group("combo_system")
+	if combo and combo.has_method("register_hit"):
+		var bonus_points = combo.register_hit("bumper_" + bumper_type.keys()[bumper_type], base_points)
+		if bonus_points > 0:
+			# Add combo bonus to score
+			GameManagerV4.add_score(bonus_points)
 
 func _show_hit_feedback() -> void:
 	## Show visual feedback for hit
@@ -186,7 +214,18 @@ func _show_hit_feedback() -> void:
 	tween.tween_property(sprite, "scale", Vector2(1.2, 1.2), 0.05)
 	tween.tween_property(sprite, "scale", Vector2(1.0, 1.0), 0.05)
 	
+	# Spawn particles
+	_spawn_particles()
+	
 	# Could add particles or other effects here
+
+func _spawn_particles() -> void:
+	var particles = get_tree().get_first_node_in_group("particle_system")
+	if particles and particles.has_method("spawn_hit_effect"):
+		var color = Color(1.0, 0.9, 0.2, 1.0)  # Yellow-gold
+		if is_lit:
+			color = Color(0.2, 1.0, 0.4, 1.0)  # Green when lit
+		particles.spawn_hit_effect(global_position, color, 8)
 
 func _apply_bounce_impulse(ball: RigidBody2D) -> void:
 	## Apply bounce impulse to ball

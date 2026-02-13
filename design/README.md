@@ -56,6 +56,8 @@ v4.0 does **not** include shop, currency, or battle pass from v2/v3; it is a clo
    - Implemented: GameManagerV4, start flow, playfield, drain, skill shot, UI, game over
    - Not yet: full zones, bonus ball triggers, backbox leaderboard/initials/share, camera behavior
 
+9. **Implementation history (Minimax extension)** – **[PINBALL_CHANGELOG.md](PINBALL_CHANGELOG.md)** and **[GDD-v4.0.md §10](GDD-v4.0.md)** document the four-phase extension (32 systems: core, enhancement, polish, additional + 5 zones). Script vs autoload names (e.g. ScreenShake.gd → `ScreenShake`) are listed there. Agent API: `agent_doc/SYSTEMS.md`.
+
 ## Related
 
 - **Implementation:** Godot project under [scripts/](../scripts/), [scenes/](../scenes/), [assets/](../assets/) (v4.0-specific or shared).

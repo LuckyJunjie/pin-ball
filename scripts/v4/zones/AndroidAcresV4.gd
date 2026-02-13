@@ -111,10 +111,17 @@ func _on_ramp_hit(body: Node) -> void:
 		# Register ramp hit for multiplier tracking
 		GameManagerV4.register_zone_ramp_hit("android_acres")
 		
+		# Register combo
+		_register_combo("ramp_hit")
+		
+		# Spawn particles
+		_spawn_hit_effect()
+		
 		# Play sound
-		var sm = get_tree().get_first_node_in_group("sound_manager")
-		if sm and sm.has_method("play_sound"):
-			sm.play_sound("ramp_hit")
+		_play_sound()
+		
+		# Trigger screen shake
+		_trigger_screen_shake()
 		
 		# Visual feedback
 		_show_ramp_hit_feedback()
@@ -260,7 +267,39 @@ func _show_bumper_bonus_feedback() -> void:
 		if bumper and bumper.has_method("bonus_flash"):
 			bumper.bonus_flash()
 	
+	# Trigger heavy screen shake
+	_trigger_screen_shake("heavy")
+	
 	# Could add particles or screen shake here
+
+func _trigger_screen_shake(type: String = "medium") -> void:
+	var screen_shake = get_tree().get_first_node_in_group("screen_shake")
+	if screen_shake:
+		match type:
+			"light":
+				screen_shake.shake_light()
+			"medium":
+				screen_shake.shake_medium()
+			"heavy":
+				screen_shake.shake_heavy()
+			"extreme":
+				screen_shake.shake_extreme()
+
+func _register_combo(hit_type: String) -> void:
+	var combo = get_tree().get_first_node_in_group("combo_system")
+	if combo and combo.has_method("register_hit"):
+		combo.register_hit(hit_type, 5000)
+
+func _spawn_hit_effect() -> void:
+	var particles = get_tree().get_first_node_in_group("particle_system")
+	if particles and particles.has_method("spawn_hit_effect"):
+		if spaceship_ramp:
+			particles.spawn_hit_effect(spaceship_ramp.global_position, Color(0.2, 0.8, 0.2, 1.0), 10)
+
+func _play_sound() -> void:
+	var audio = get_tree().get_first_node_in_group("sound_manager")
+	if audio and audio.has_method("play_sound"):
+		audio.play_sound("ramp_hit")
 
 
 func _on_round_lost() -> void:

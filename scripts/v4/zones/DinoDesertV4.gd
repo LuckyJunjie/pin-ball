@@ -68,13 +68,17 @@ func _on_dino_mouth_hit(body: Node) -> void:
 		# Activate Dino Chomp bonus
 		GameManagerV4.add_bonus(GameManagerV4.Bonus.DINO_CHOMP)
 		
+		# Trigger screen shake
+		_trigger_screen_shake("extreme")
+		
+		# Spawn particles
+		_spawn_particles()
+		
 		# Visual feedback
 		_show_dino_chomp_activation()
 		
 		# Play sound
-		var sm = get_tree().get_first_node_in_group("sound_manager")
-		if sm and sm.has_method("play_sound"):
-			sm.play_sound("bonus_activation")
+		_play_sound("chomp")
 		
 		# Reactivate after delay
 		await get_tree().create_timer(15.0).timeout
@@ -171,6 +175,38 @@ func _show_slingshot_bonus() -> void:
 		slingshot_left.bonus_flash()
 	if slingshot_right and slingshot_right.has_method("bonus_flash"):
 		slingshot_right.bonus_flash()
+	
+	# Trigger screen shake
+	_trigger_screen_shake("heavy")
+
+func _trigger_screen_shake(type: String = "medium") -> void:
+	var screen_shake = get_tree().get_first_node_in_group("screen_shake")
+	if screen_shake:
+		match type:
+			"light":
+				screen_shake.shake_light()
+			"medium":
+				screen_shake.shake_medium()
+			"heavy":
+				screen_shake.shake_heavy()
+			"extreme":
+				screen_shake.shake_extreme()
+
+func _spawn_particles() -> void:
+	var particles = get_tree().get_first_node_in_group("particle_system")
+	if particles and particles.has_method("spawn_bonus_effect"):
+		if dino_mouth:
+			particles.spawn_bonus_effect(dino_mouth.global_position)
+
+func _play_sound(sound_name: String) -> void:
+	var audio = get_tree().get_first_node_in_group("sound_manager")
+	if audio and audio.has_method("play_sound"):
+		audio.play_sound(sound_name)
+
+func _register_combo(hit_type: String, points: int) -> void:
+	var combo = get_tree().get_first_node_in_group("combo_system")
+	if combo and combo.has_method("register_hit"):
+		combo.register_hit(hit_type, points)
 
 
 func _update_dino_mouth_visual() -> void:

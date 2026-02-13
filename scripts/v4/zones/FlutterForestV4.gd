@@ -116,13 +116,17 @@ func _on_dash_nest_completed() -> void:
 	var points = 150000
 	GameManagerV4.add_score(points)
 	
+	# Trigger screen shake
+	_trigger_screen_shake("extreme")
+	
+	# Spawn particles
+	_spawn_particles()
+	
 	# Visual feedback
 	_show_dash_nest_completion()
 	
 	# Play sound
-	var sm = get_tree().get_first_node_in_group("sound_manager")
-	if sm and sm.has_method("play_sound"):
-		sm.play_sound("nest_completed")
+	_play_sound("nest_completed")
 	
 	# Reset nest after delay
 	await get_tree().create_timer(5.0).timeout
@@ -183,6 +187,32 @@ func _update_bumper_visual(bumper_id: String) -> void:
 func _update_dash_animatronic() -> void:
 	if dash_animatronic and dash_animatronic.has_method("set_progress"):
 		dash_animatronic.set_progress(dash_nest_progress)
+
+func _trigger_screen_shake(type: String = "medium") -> void:
+	var screen_shake = get_tree().get_first_node_in_group("screen_shake")
+	if screen_shake:
+		match type:
+			"light":
+				screen_shake.shake_light()
+			"medium":
+				screen_shake.shake_medium()
+			"heavy":
+				screen_shake.shake_heavy()
+			"extreme":
+				screen_shake.shake_extreme()
+
+func _spawn_particles() -> void:
+	var particles = get_tree().get_first_node_in_group("particle_system")
+	if particles and particles.has_method("spawn_bonus_effect"):
+		var center_pos = Vector2(400, 200)  # Approximate center
+		if dash_animatronic:
+			center_pos = dash_animatronic.global_position
+		particles.spawn_bonus_effect(center_pos)
+
+func _play_sound(sound_name: String) -> void:
+	var audio = get_tree().get_first_node_in_group("sound_manager")
+	if audio and audio.has_method("play_sound"):
+		audio.play_sound(sound_name)
 
 
 func reset_zone() -> void:

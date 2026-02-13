@@ -69,11 +69,13 @@ func _on_letter_hit(body: Node, index: int) -> void:
 		
 		# Visual feedback
 		_show_letter_activation(index)
+		_spawn_letter_effect(index)
 		
 		# Play sound
-		var sm = get_tree().get_first_node_in_group("sound_manager")
-		if sm and sm.has_method("play_sound"):
-			sm.play_sound("letter_hit")
+		_play_sound("letter_hit")
+		
+		# Register combo
+		_register_combo("letter_hit")
 		
 		# Check for word completion
 		if _is_word_complete():
@@ -91,6 +93,12 @@ func _on_rollover_hit(body: Node, side: String) -> void:
 		
 		# Register as ramp hit for multiplier
 		GameManagerV4.register_zone_ramp_hit("google_gallery")
+		
+		# Register combo
+		_register_combo("rollover_hit")
+		
+		# Trigger screen shake
+		_trigger_screen_shake()
 		
 		# Visual feedback
 		_show_rollover_feedback(side)
@@ -123,15 +131,23 @@ func _on_word_completed() -> void:
 	
 	# Visual feedback
 	_show_word_completion_effect()
+	_spawn_word_completion_effect()
+	
+	# Trigger screen shake
+	_trigger_screen_shake("heavy")
 	
 	# Play sound
-	var sm = get_tree().get_first_node_in_group("sound_manager")
-	if sm and sm.has_method("play_sound"):
-		sm.play_sound("word_completed")
+	_play_sound("word_completed")
 	
 	# Reset word after delay
 	await get_tree().create_timer(3.0).timeout
 	_reset_word()
+
+func _spawn_word_completion_effect() -> void:
+	var particles = get_tree().get_first_node_in_group("particle_system")
+	if particles and particles.has_method("spawn_word_completion_effect"):
+		var center_pos = Vector2(400, 150)
+		particles.spawn_word_completion_effect(center_pos)
 
 
 func _reset_word() -> void:
@@ -180,6 +196,38 @@ func _show_rollover_bonus() -> void:
 		rollover_left.bonus_flash()
 	if rollover_right and rollover_right.has_method("bonus_flash"):
 		rollover_right.bonus_flash()
+	
+	# Trigger screen shake
+	_trigger_screen_shake()
+
+func _trigger_screen_shake(type: String = "light") -> void:
+	var screen_shake = get_tree().get_first_node_in_group("screen_shake")
+	if screen_shake:
+		match type:
+			"light":
+				screen_shake.shake_light()
+			"medium":
+				screen_shake.shake_medium()
+			"heavy":
+				screen_shake.shake_heavy()
+
+func _register_combo(hit_type: String) -> void:
+	var combo = get_tree().get_first_node_in_group("combo_system")
+	if combo and combo.has_method("register_hit"):
+		combo.register_hit(hit_type, 5000)
+
+func _spawn_letter_effect(index: int) -> void:
+	var particles = get_tree().get_first_node_in_group("particle_system")
+	if particles and particles.has_method("spawn_letter_effect"):
+		var letter_pos = Vector2(200 + (index * 80), 150)  # Approximate letter positions
+		if index < letter_nodes.size() and letter_nodes[index]:
+			letter_pos = letter_nodes[index].global_position
+		particles.spawn_letter_effect(letter_pos, word_letters[index])
+
+func _play_sound(sound_name: String) -> void:
+	var audio = get_tree().get_first_node_in_group("sound_manager")
+	if audio and audio.has_method("play_sound"):
+		audio.play_sound(sound_name)
 
 
 func _update_letter_visuals() -> void:

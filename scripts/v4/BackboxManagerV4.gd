@@ -1,6 +1,6 @@
 extends Node
 ## v4.0 Backbox state (BackboxBloc equivalent). Manages leaderboard, initials, share.
-## Use as autoload "BackboxManagerV4". No Firebase; uses local mock leaderboard.
+## Uses LeaderboardV4 for persistence; SocialSharingV4 for share.
 
 enum State {
 	LEADERBOARD_SUCCESS,
@@ -22,25 +22,26 @@ var share_score: int = 0
 ## Set by MainMenuV4 when user selects character (e.g. "sparky", "dino", "dash", "android").
 var selected_character_key: String = "sparky"
 
-const MOCK_ENTRIES: Array = [
-	{"initials": "ABC", "score": 5000000, "character_key": "sparky"},
-	{"initials": "XYZ", "score": 3000000, "character_key": "dino"},
-	{"initials": "IO", "score": 2000000, "character_key": "dash"},
-	{"initials": "GD", "score": 1500000, "character_key": "android"},
-	{"initials": "ME", "score": 1000000, "character_key": "sparky"},
-]
-
 
 func _ready() -> void:
 	add_to_group("backbox_manager_v4")
-	_load_leaderboard_mock()
+	_load_leaderboard()
 
 
-func _load_leaderboard_mock() -> void:
+func _load_leaderboard() -> void:
+	_set_state(State.LOADING, null)
 	leaderboard_entries.clear()
-	for e in MOCK_ENTRIES:
-		leaderboard_entries.append(e.duplicate())
-	_set_state(State.LEADERBOARD_SUCCESS, leaderboard_entries)
+	if LeaderboardV4:
+		var raw = LeaderboardV4.get_leaderboard(10, "")
+		for e in raw:
+			leaderboard_entries.append({
+				"initials": e.get("initials", "???"),
+				"score": e.get("score", 0),
+				"character_key": e.get("character", "sparky")
+			})
+		_set_state(State.LEADERBOARD_SUCCESS, leaderboard_entries)
+	else:
+		_set_state(State.LEADERBOARD_FAILURE, null)
 
 
 func request_initials(score: int, character_theme_key: String) -> void:
@@ -57,15 +58,18 @@ func submit_initials(initials: String) -> void:
 		submit_initials_failure()
 		return
 	
-	# Mock: no network; add to local list and show success
-	var entry = {"initials": initials.to_upper().substr(0, 3), "score": initials_score, "character_key": initials_character_key}
-	leaderboard_entries.append(entry)
-	leaderboard_entries.sort_custom(func(a, b): return a.score > b.score)
-	if leaderboard_entries.size() > 10:
-		leaderboard_entries.resize(10)
-	
-	# Save to local storage (mock)
-	_save_leaderboard_to_storage()
+	var three = initials.to_upper().substr(0, 3)
+	if LeaderboardV4:
+		LeaderboardV4.submit_score(three, initials_score, initials_character_key)
+		# Reload leaderboard for display
+		leaderboard_entries.clear()
+		var raw = LeaderboardV4.get_leaderboard(10, "")
+		for e in raw:
+			leaderboard_entries.append({
+				"initials": e.get("initials", "???"),
+				"score": e.get("score", 0),
+				"character_key": e.get("character", "sparky")
+			})
 	
 	_set_state(State.INITIALS_SUCCESS, {"score": initials_score})
 	
@@ -81,10 +85,13 @@ func submit_initials_failure() -> void:
 func request_share(score: int) -> void:
 	share_score = score
 	_set_state(State.SHARE, score)
+	# Invoke SocialSharingV4 so user can copy/share (GDD §4.3, §5.3)
+	if SocialSharingV4 and SocialSharingV4.has_method("share_high_score"):
+		SocialSharingV4.share_high_score(score, initials_character_key)
 
 
 func go_to_leaderboard() -> void:
-	_load_leaderboard_mock()
+	_load_leaderboard()
 
 
 func get_leaderboard_entries() -> Array:
@@ -112,17 +119,9 @@ func _validate_initials(initials: String) -> bool:
 	return regex.search(initials) != null
 
 
-func _save_leaderboard_to_storage() -> void:
-	## Mock save to local storage
-	# In a real implementation, this would save to file or database
-	print("BackboxManagerV4: Saved leaderboard with %d entries" % leaderboard_entries.size())
-
-
 func _load_leaderboard_from_storage() -> void:
-	## Mock load from local storage
-	# In a real implementation, this would load from file or database
-	# For now, just use mock entries
-	_load_leaderboard_mock()
+	## Reload from LeaderboardV4 (e.g. after returning to menu)
+	_load_leaderboard()
 
 
 func _set_state(new_state: State, data: Variant) -> void:

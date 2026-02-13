@@ -164,3 +164,66 @@ Exact zoom ratios and positions should match playability and aspect ratio (refer
 ## 9. Reference
 
 - Design and behavior parity with Flutter I/O Pinball; see [FLUTTER-PINBALL-PARSING.md](FLUTTER-PINBALL-PARSING.md) and [Component-Specifications-v4.0.md](Component-Specifications-v4.0.md) for details.
+
+---
+
+## 10. Implementation History (Minimax Extension)
+
+v4.0 was extended in four phases. The following systems are implemented in `scripts/v4/` (and root where noted). **Autoload names** may differ from script filenames (e.g. `ScreenShake` autoload → `ScreenShake.gd`).
+
+### Phase 1 – Core (5 systems)
+
+| System | Script | Autoload / Note |
+|--------|--------|------------------|
+| Game state | GameManagerV4.gd | GameManagerV4 |
+| Ball pooling | BallPoolV4.gd | BallPoolV4 |
+| Character theme | CharacterThemeManagerV4.gd | CharacterThemeManagerV4 |
+| Bonuses | BonusManagerV4.gd | BonusManagerV4 |
+| Save/Load | GameManagerV4 (internal) + SaveManager.gd | SaveManager (root); v4 state in GameManagerV4 to `user://saves/v4.0_save.json` |
+
+### Phase 2 – Enhancement (9 systems)
+
+| System | Script | Autoload / Note |
+|--------|--------|------------------|
+| Difficulty | DifficultySystem.gd | DifficultySystem |
+| Screen shake | ScreenShake.gd | ScreenShake |
+| Combo | ComboSystem.gd | ComboSystem |
+| Ball trail | BallTrailV4.gd | (scene node) |
+| Particles | ParticleEffectsV4.gd | ParticleEffectsV4 |
+| Audio | EnhancedAudioV4.gd | EnhancedAudioV4 |
+| Mobile controls | MobileControlsV4.gd | MobileControlsV4 |
+| Achievements | AchievementSystemV4.gd | AchievementSystemV4 |
+| Auto-save | (inside GameManagerV4) | — |
+
+### Phase 3 – Polish (5 systems)
+
+| System | Script | Autoload / Note |
+|--------|--------|------------------|
+| CRT effect | CRTEffectV4.gd | (CanvasLayer) |
+| Character animatronic | CharacterAnimatronicV4.gd | (scene node) |
+| Leaderboard | LeaderboardV4.gd | LeaderboardV4 |
+| Tutorial | TutorialSystemV4.gd | TutorialSystemV4 |
+| Performance monitor | PerformanceMonitorV4.gd | PerformanceMonitorV4 |
+
+### Phase 4 – Additional (8 systems)
+
+| System | Script | Autoload / Note |
+|--------|--------|------------------|
+| Daily challenge | DailyChallengeV4.gd | DailyChallengeV4 |
+| Statistics | StatisticsTrackerV4.gd | StatisticsTrackerV4 |
+| Easter eggs | EasterEggV4.gd | EasterEggV4 |
+| Settings | SettingsV4.gd | SettingsV4 |
+| Social sharing | SocialSharingV4.gd | SocialSharingV4 |
+| Localization | LocalizationV4.gd | LocalizationV4 |
+| Replay | ReplayV4.gd | ReplayV4 |
+| Ads | AdSystemV4.gd | AdSystemV4 |
+
+### Zones (5)
+
+- AndroidAcresV4.gd, GoogleGalleryV4.gd, FlutterForestV4.gd, DinoDesertV4.gd, SparkyScorchV4.gd
+
+### Design notes
+
+- **BallPoolV4**: Autoload name refers to the instance. To call static methods (e.g. `get_instance()`), use the script: `const BallPoolScript := preload("res://scripts/v4/BallPoolV4.gd")` then `BallPoolScript.get_instance()`.
+- **Save**: v4 game state is saved by GameManagerV4 to `user://saves/v4.0_save.json`. The root `SaveManager` autoload may be used for other data.
+- **Total**: 32 systems (27 autoload/scene systems + 5 zones); see `agent_doc/SYSTEMS.md` for API details.

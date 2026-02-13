@@ -5,7 +5,9 @@ var game_manager: Node = null
 
 
 func before_all():
-	game_manager = autoqfree(load("res://scripts/v4/GameManagerV4.gd").new())
+	game_manager = get_node("/root/GameManagerV4")
+	if game_manager and game_manager.get("is_save_system_enabled") != null:
+		game_manager.is_save_system_enabled = false
 
 
 func test_game_manager_exists():
@@ -102,7 +104,7 @@ func test_bonus_system():
 	# Test adding bonus
 	game_manager.add_bonus(game_manager.Bonus.ANDROID_SPACESHIP)
 	assert_eq(game_manager.bonus_history.size(), 1)
-	assert_eq(game_manager.bonus_history[0], game_manager.Bonus.ANDROID_SPACUSHIP)
+	assert_eq(game_manager.bonus_history[0], game_manager.Bonus.ANDROID_SPACESHIP)
 	
 	# Test bonus history accumulation
 	game_manager.add_bonus(game_manager.Bonus.GOOGLE_WORD)

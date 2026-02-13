@@ -1,0 +1,106 @@
+[gd_scene load_steps=2 format=3 uid="uid://mobile_ui"]
+
+[ext_resource type="Script" uid="uid://mobile_controls" path="res://scripts/v4/MobileControlsV4.gd" id="1"]
+
+[node name="MobileControlsV4" type="CanvasLayer"]
+script = ExtResource("1")
+
+[node name="TouchZones" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="LeftFlipperZone" type="ColorRect" parent="TouchZones"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 400.0
+grow_horizontal = 2
+color = Color(1, 0, 0, 0.1)
+
+[node name="RightFlipperZone" type="ColorRect" parent="TouchZones"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 400.0
+grow_horizontal = 2
+color = Color(0, 0, 1, 0.1)
+
+[node name="LaunchZone" type="ColorRect" parent="TouchZones"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -100.0
+offset_top = -150.0
+offset_right = 100.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 0
+color = Color(0, 1, 0, 0.1)
+
+[node name="FlipperHints" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="LeftHint" type="Label" parent="FlipperHints"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -150.0
+offset_top = -80.0
+offset_right = -50.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "← LEFT"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RightHint" type="Label" parent="FlipperHints"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = 50.0
+offset_top = -80.0
+offset_right = 150.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "RIGHT →"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LaunchHint" type="Label" parent="FlipperHints"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -50.0
+offset_top = -130.0
+offset_right = 50.0
+offset_bottom = -90.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "LAUNCH"
+horizontal_alignment = 1
+vertical_alignment = 1
