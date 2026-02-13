@@ -142,22 +142,6 @@ func on_round_lost() -> void:
 	if status != Status.PLAYING:
 		return
 	
-	# Get combo count before register_drain (which resets it)
-	var combo_sys = get_tree().get_first_node_in_group("combo_system")
-	var combo_count_at_drain := 0
-	if combo_sys and "combo_count" in combo_sys:
-		combo_count_at_drain = combo_sys.combo_count
-	
-	# Collect combo bonus and add to round score
-	var combo_bonus = _collect_combo_bonus()
-	round_score += combo_bonus
-	
-	# Notify achievement and statistics systems
-	if combo_count_at_drain > 0:
-		if AchievementSystemV4:
-			AchievementSystemV4.on_combo_achieved(combo_count_at_drain)
-		if StatisticsTrackerV4:
-			StatisticsTrackerV4.on_combo_changed(combo_count_at_drain)
 	
 	var final_round = round_score * multiplier
 	total_score = mini(total_score + final_round, MAX_SCORE)
@@ -191,12 +175,6 @@ func increase_multiplier() -> void:
 	var old_multiplier = multiplier
 	multiplier += 1
 	multiplier_increased.emit()
-	
-	# Notify achievement and statistics systems
-	if AchievementSystemV4:
-		AchievementSystemV4.on_multiplier_changed(multiplier)
-	if StatisticsTrackerV4:
-		StatisticsTrackerV4.on_multiplier_changed(multiplier)
 	
 	# Visual feedback
 	_show_multiplier_effect(old_multiplier, multiplier)
@@ -292,15 +270,6 @@ func reset_zone_tracking() -> void:
 	## Reset zone-specific tracking for new round/game
 	for zone in zone_ramp_hits:
 		zone_ramp_hits[zone] = 0
-
-func _bonus_enum_to_string(b: Bonus) -> String:
-	match b:
-		Bonus.GOOGLE_WORD: return "GOOGLE_WORD"
-		Bonus.DASH_NEST: return "DASH_NEST"
-		Bonus.SPARKY_TURBO_CHARGE: return "SPARKY_TURBO_CHARGE"
-		Bonus.DINO_CHOMP: return "DINO_CHOMP"
-		Bonus.ANDROID_SPACESHIP: return "ANDROID_SPACESHIP"
-	return ""
 
 func _collect_combo_bonus() -> int:
 	## Collect and add combo bonus to round score
