@@ -118,11 +118,11 @@ func trigger_haptic(type: String) -> void:
 	
 	match type:
 		"light":
-			OS.vibrate_handheld(10)
+			Input.vibrate_handheld(10)
 		"medium":
-			OS.vibrate_handhand(20)
+			Input.vibrate_handheld(20)
 		"heavy":
-			OS.vibrate_handheld(30)
+			Input.vibrate_handheld(30)
 
 # ============================================
 # Subtitles

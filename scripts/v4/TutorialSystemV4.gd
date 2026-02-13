@@ -191,7 +191,7 @@ func _create_tutorial_ui(step: Dictionary) -> void:
 		
 		"wait_for_input":
 			# Will continue when input is detected
-			_pass
+			pass
 		
 		"complete":
 			await get_tree().create_timer(3.0).timeout

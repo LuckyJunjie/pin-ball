@@ -148,7 +148,7 @@ func recognize_long_press(position: Vector2, duration: float) -> void:
 
 func trigger_haptic_feedback(type: String = "light") -> void:
 	if OS.get_name() == "Android":
-		OS.vibrate_handheld(10)  # Light vibration
+		Input.vibrate_handheld(10)  # Light vibration (duration_ms)
 	elif OS.get_name() == "iOS":
 		# iOS haptics would require native code
 		pass
@@ -157,7 +157,7 @@ func trigger_impact_feedback(intensity: float = 0.5) -> void:
 	## Haptic feedback for game impacts
 	var duration = int(intensity * 20)
 	if OS.get_name() == "Android":
-		OS.vibrate_handheld(duration)
+		Input.vibrate_handheld(duration)
 
 # ============================================
 # Static Access

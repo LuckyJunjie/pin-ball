@@ -271,6 +271,15 @@ func reset_zone_tracking() -> void:
 	for zone in zone_ramp_hits:
 		zone_ramp_hits[zone] = 0
 
+func _bonus_enum_to_string(b: Bonus) -> String:
+	match b:
+		Bonus.GOOGLE_WORD: return "GOOGLE_WORD"
+		Bonus.DASH_NEST: return "DASH_NEST"
+		Bonus.SPARKY_TURBO_CHARGE: return "SPARKY_TURBO_CHARGE"
+		Bonus.DINO_CHOMP: return "DINO_CHOMP"
+		Bonus.ANDROID_SPACESHIP: return "ANDROID_SPACESHIP"
+	return ""
+
 func _collect_combo_bonus() -> int:
 	## Collect and add combo bonus to round score
 	var combo = get_tree().get_first_node_in_group("combo_system")

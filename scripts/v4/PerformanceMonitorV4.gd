@@ -23,7 +23,7 @@ var _optimizations_applied: Array = []
 
 func _ready() -> void:
 	add_to_group("performance_monitor")
-	Engine.framerate = target_fps
+	Engine.max_fps = target_fps
 
 func _process(delta: float) -> void:
 	_frame_count += 1
@@ -147,19 +147,19 @@ func get_optimizations_applied() -> Array:
 func set_quality_preset(preset: String) -> void:
 	match preset:
 		"low":
-			Engine.framerate = 30
+			Engine.max_fps = 30
 			PhysicsServer2D.iterations_per_second = 30
 			_disable_all_effects()
 		"medium":
-			Engine.framerate = 45
+			Engine.max_fps = 45
 			PhysicsServer2D.iterations_per_second = 45
 			_reduce_effects()
 		"high":
-			Engine.framerate = 60
+			Engine.max_fps = 60
 			PhysicsServer2D.iterations_per_second = 60
 			_enable_all_effects()
 		"ultra":
-			Engine.framerate = 120
+			Engine.max_fps = 120
 			PhysicsServer2D.iterations_per_second = 120
 			_enable_all_effects()
 

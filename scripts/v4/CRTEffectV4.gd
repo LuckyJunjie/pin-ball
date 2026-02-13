@@ -98,7 +98,9 @@ func _process(delta: float) -> void:
 
 func set_enabled(enabled_state: bool) -> void:
 	enabled = enabled_state
-	visible = enabled
+	var effect_rect = get_node_or_null("CRTEffect") as CanvasItem
+	if effect_rect:
+		effect_rect.visible = enabled
 
 func set_scanline_intensity(value: float) -> void:
 	scanline_intensity = clamp(value, 0.0, 1.0)
