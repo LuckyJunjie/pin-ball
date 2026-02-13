@@ -261,7 +261,7 @@ func _evaluate_condition(condition: String) -> bool:
 
 func _unlock_achievement(ach_id: String, ach: Dictionary) -> void:
 	_unlocked_achievements.append(ach_id)
-	_achievement_unlocked.emit(ach_id, ach["name"])
+	achievement_unlocked.emit(ach_id, ach["name"])
 	
 	# Update stats with bonus points
 	if _stats.has("total_points"):

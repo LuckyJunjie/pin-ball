@@ -89,7 +89,7 @@ func _share_to_system(message: String, title: String) -> void:
 
 func _share_android(message: String, title: String) -> void:
 	# Android sharing via intent
-	var url = "https://pinball.example.com/share?text=%s" % message.percent_encode()
+	var url = "https://pinball.example.com/share?text=%s" % message.uri_encode()
 	
 	# In a real implementation, would use Android Java interface
 	print("Android share: %s" % message)
