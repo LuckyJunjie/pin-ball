@@ -85,23 +85,24 @@ jobs:
       
       - name: Setup Godot 4.5.1
         run: |
-          # Download Godot 4.5.1
+          # Download Godot 4.5.1 headless
           wget -q https://github.com/godotengine/godot/releases/download/4.5.1/Godot_v4.5.1_linux.x86_64.zip -O godot.zip
           unzip -q godot.zip
           chmod +x Godot_v4.5.1_linux.x86_64
           mv Godot_v4.5.1_linux.x86_64 godot
+          rm -f godot.zip
           
-          wget -q https://github.com/godotengine/godot/releases/download/4.5.1/Godot_v4.5.1_linux.x86_64.zip -O godot_headless.zip
-          unzip -q godot_headless.zip
-          chmod +x Godot_v4.5.1_linux.x86_64
-          mv Godot_v4.5.1_linux.x86_64 godot_headless
+          # Download export templates
+          mkdir -p ~/.local/share/godot/export_templates/4.5.1
+          wget -q https://github.com/godotengine/godot/releases/download/4.5.1/Godot_v4.5.1_export_templates.tpz -O templates.zip
+          unzip -q templates.zip -d templates/
+          mv templates/* ~/.local/share/godot/export_templates/4.5.1/
+          rm -rf templates templates.zip
           
-          echo "✅ Godot version: $(./godot --version)"
-          rm -f godot.zip godot_headless.zip
+          echo "✅ Godot installed: $(./godot --version)"
       
       - name: Import Project
         run: |
-          mkdir -p ~/.local/share/godot/export_templates/4.5.1
           echo "📦 Importing project..."
           timeout 60 ./godot --path $GITHUB_WORKSPACE --quiet --headless || {
             echo "❌ Project import failed"
