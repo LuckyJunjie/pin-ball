@@ -48,7 +48,7 @@ jobs:
             close_parens=$(grep -o ')' "$file" | wc -l)
             if [ "$open_parens" != "$close_parens" ]; then
               echo "⚠️  Unbalanced parentheses: $file"
-              ((error_count++))
+              error_count=$((error_count + 1))
             fi
             
             # Check for unclosed braces
@@ -56,7 +56,7 @@ jobs:
             close_braces=$(grep -o '}' "$file" | wc -l)
             if [ "$open_braces" != "$close_braces" ]; then
               echo "⚠️  Unbalanced braces: $file"
-              ((error_count++))
+              error_count=$((error_count + 1))
             fi
           done
           
@@ -78,23 +78,32 @@ jobs:
   # Job 2: Godot Build Test (runs in ~3-5 minutes)
   godot-test:
     runs-on: ubuntu-latest
-    container:
-      image: barichello/godot-ci:4.4
     
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Setup Godot
+      - name: Setup Godot 4.5.1
         run: |
-          echo "✅ Godot version: $(godot --version)"
-          echo "✅ Headless version: $(godot_headless --version)"
+          # Download Godot 4.5.1
+          wget -q https://github.com/godotengine/godot/releases/download/4.5.1/Godot_v4.5.1_linux.x86_64.zip -O godot.zip
+          unzip -q godot.zip
+          chmod +x Godot_v4.5.1_linux.x86_64
+          mv Godot_v4.5.1_linux.x86_64 godot
+          
+          wget -q https://github.com/godotengine/godot/releases/download/4.5.1/Godot_v4.5.1_linux.x86_64.zip -O godot_headless.zip
+          unzip -q godot_headless.zip
+          chmod +x Godot_v4.5.1_linux.x86_64
+          mv Godot_v4.5.1_linux.x86_64 godot_headless
+          
+          echo "✅ Godot version: $(./godot --version)"
+          rm -f godot.zip godot_headless.zip
       
       - name: Import Project
         run: |
-          mkdir -p ~/.local/share/godot/export_templates/4.4.1
+          mkdir -p ~/.local/share/godot/export_templates/4.5.1
           echo "📦 Importing project..."
-          timeout 60 godot_headless --path $GITHUB_WORKSPACE --quiet --headless || {
+          timeout 60 ./godot --path $GITHUB_WORKSPACE --quiet --headless || {
             echo "❌ Project import failed"
             exit 1
           }
@@ -128,7 +137,7 @@ jobs:
           
           mkdir -p build/web
           
-          if godot --headless --export-release "Web" build/web/index.html 2>&1; then
+          if ./godot --headless --export-release "Web" build/web/index.html 2>&1; then
             echo "✅ Web export successful!"
             ls -la build/web/
           else
