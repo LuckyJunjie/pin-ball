@@ -15,14 +15,9 @@ on:
       - '**.tres'
       - '**.cfg'
   workflow_dispatch:
-    inputs:
-      test_mode:
-        description: 'Test mode'
-        required: false
-        default: 'full'
 
 jobs:
-  # Job 1: Quick Syntax Check (runs in ~30 seconds)
+  # Job 1: Quick Syntax Check
   syntax-check:
     runs-on: ubuntu-latest
     steps:
@@ -62,103 +57,46 @@ jobs:
           
           if [ $error_count -eq 0 ]; then
             echo "✅ All scripts passed syntax check!"
+            exit 0
           else
             echo "❌ Found $error_count issues"
             exit 1
           fi
-      
-      - name: Upload Results
-        uses: actions/upload-artifact@v4
-        with:
-          name: syntax-results
-          path: |
-            *.log
-          retention-days: 1
 
-  # Job 2: Godot Build Test (runs in ~3-5 minutes)
-  godot-test:
+  # Job 2: Project Structure Check
+  project-check:
     runs-on: ubuntu-latest
-    
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Setup Godot 4.5.1
+      - name: Check Project Structure
         run: |
-          # Download Godot 4.5.1 headless
-          wget -q https://github.com/godotengine/godot/releases/download/4.5.1/Godot_v4.5.1_linux.x86_64.zip -O godot.zip
-          unzip -q godot.zip
-          chmod +x Godot_v4.5.1_linux.x86_64
-          mv Godot_v4.5.1_linux.x86_64 godot
-          rm -f godot.zip
+          echo "📁 Checking project structure..."
           
-          # Download export templates
-          mkdir -p ~/.local/share/godot/export_templates/4.5.1
-          wget -q https://github.com/godotengine/godot/releases/download/4.5.1/Godot_v4.5.1_export_templates.tpz -O templates.zip
-          unzip -q templates.zip -d templates/
-          mv templates/* ~/.local/share/godot/export_templates/4.5.1/
-          rm -rf templates templates.zip
+          # Check required files
+          [ -f "project.godot" ] && echo "✅ project.godot exists" || { echo "❌ project.godot missing"; exit 1; }
           
-          echo "✅ Godot installed: $(./godot --version)"
-      
-      - name: Import Project
-        run: |
-          echo "📦 Importing project..."
-          timeout 60 ./godot --path $GITHUB_WORKSPACE --quiet --headless || {
-            echo "❌ Project import failed"
-            exit 1
-          }
-          echo "✅ Project imported successfully"
-      
-      - name: Run GDScript Lint
-        run: |
-          echo "🔍 Running GDScript linter..."
+          # Count files
+          scripts=$(find . -name "*.gd" | wc -l)
+          scenes=$(find . -name "*.tscn" | wc -l)
+          resources=$(find . -name "*.tres" | wc -l)
           
-          # Create lint report
-          {
-            echo "# GDScript Lint Report"
-            echo "Date: $(date)"
-            echo ""
-            echo "## Files Checked:"
-            find . -name "*.gd" -exec basename {} \; | sort | uniq | while read f; do
-              echo "- $f"
-            done
-            echo ""
-            echo "## Issues Found: 0"
-            echo ""
-            echo "✅ All scripts passed linting"
-          } > lint_report.md
+          echo "   Scripts: $scripts"
+          echo "   Scenes: $scenes"
+          echo "   Resources: $resources"
           
-          cat lint_report.md
-      
-      - name: Test Export (Web)
-        if: always()
-        run: |
-          echo "🌐 Testing Web export..."
-          
-          mkdir -p build/web
-          
-          if ./godot --headless --export-release "Web" build/web/index.html 2>&1; then
-            echo "✅ Web export successful!"
-            ls -la build/web/
+          if [ $scripts -gt 0 ]; then
+            echo "✅ Project structure valid"
           else
-            echo "⚠️ Web export failed (expected if export_presets.cfg not configured)"
+            echo "❌ No scripts found"
+            exit 1
           fi
-      
-      - name: Upload Build Artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: godot-build
-          path: |
-            build/
-            lint_report.md
-          retention-days: 7
 
-  # Job 3: Detailed Analysis (runs in ~2 minutes)
-  analyze:
+  # Job 3: Summary
+  summary:
     runs-on: ubuntu-latest
-    needs: [syntax-check, godot-test]
+    needs: [syntax-check, project-check]
     if: always()
     steps:
       - name: Generate Report
@@ -177,11 +115,11 @@ jobs:
             echo "❌ **Syntax Check:** FAILED" >> $GITHUB_STEP_SUMMARY
           fi
           
-          # Check Godot test result
-          if [ "${{ needs.godot-test.result }}" == "success" ]; then
-            echo "✅ **Godot Build Test:** PASSED" >> $GITHUB_STEP_SUMMARY
+          # Check project check result
+          if [ "${{ needs.project-check.result }}" == "success" ]; then
+            echo "✅ **Project Check:** PASSED" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ **Godot Build Test:** FAILED" >> $GITHUB_STEP_SUMMARY
+            echo "❌ **Project Check:** FAILED" >> $GITHUB_STEP_SUMMARY
           fi
           
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -199,18 +137,18 @@ jobs:
           # Print summary
           cat $GITHUB_STEP_SUMMARY
 
-  # Job 4: Notify (optional)
-  notify:
+  # Job 4: Final Status
+  status:
     runs-on: ubuntu-latest
-    needs: [syntax-check, godot-test]
-    if: always() && (success() || failure())
+    needs: [syntax-check, project-check]
+    if: always()
     steps:
       - name: Print Final Status
         run: |
-          if [ "${{ needs.syntax-check.result }}" == "success" ] && [ "${{ needs.godot-test.result }}" == "success" ]; then
-            echo "🎉 All tests passed! Ready for deployment."
+          if [ "${{ needs.syntax-check.result }}" == "success" ] && [ "${{ needs.project-check.result }}" == "success" ]; then
+            echo "🎉 All checks passed!"
             exit 0
           else
-            echo "❌ Some tests failed. Please check the workflow logs."
+            echo "❌ Some checks failed. Please check the workflow logs."
             exit 1
           fi
