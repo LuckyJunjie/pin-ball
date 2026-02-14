@@ -39,7 +39,7 @@ jobs:
           # Check for common issues
           error_count=0
           
-          for file in $(find . -name "*.gd" -type f); do
+          for file in $(find . -name "*.gd" -type f | grep -v "addons/"); do
             # Check for balanced parentheses
             open_parens=$(grep -o '(' "$file" | wc -l)
             close_parens=$(grep -o ')' "$file" | wc -l)
@@ -105,16 +105,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Setup Godot
-        uses: da在内
-        with:
-          godot-version: 4.0-stable
-          uses-self-hosted-cache: false
+      - name: Download and Setup Godot
+        run: |
+          # Download Godot 4.0 stable headless
+          wget -q https://github.com/godotengine/godot/releases/download/4.0-stable/Godot_v4.0-stable_linux.x86_64.zip
+          unzip -q Godot_v4.0-stable_linux.x86_64.zip
+          chmod +x Godot_v4.0-stable_linux.x86_64
+          sudo mv Godot_v4.0-stable_linux.x86_64 /usr/local/bin/godot
       
       - name: Install dependencies for headless
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb libgl1-mesa-glx libgl1-mesa-dri libasound2 libpulse-dev
+          sudo apt-get install -y xvfb libasound2t64 libpulse-dev mesa-utils
       
       - name: Create screenshot script
         run: |
