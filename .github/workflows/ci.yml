@@ -130,26 +130,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Setup Godot
+      - name: Validate Project Structure
         run: |
-          echo "Setting up Godot for validation..."
-          Godot_Version=4.5.1
-          Godot_Zip="Godot_v${Godot_Version}_stable_linux.x86_64.zip"
-          wget -q "https://github.com/godotengine/godot/releases/download/${Godot_Version}-stable/${Godot_Zip}"
-          unzip -q "$Godot_Zip"
-          chmod +x "Godot_v${Godot_Version}_stable_linux.x86_64"
-          echo "Godot installed successfully"
-      
-      - name: Validate Project
-        run: |
+          echo "Validating Godot project..."
+          
+          # Check for project.godot
           if [ -f "project.godot" ]; then
-            echo "project.godot found"
-            head -20 project.godot
-            echo "Godot validation PASSED"
+            echo "✓ project.godot found"
+            head -20 project.godot | sed 's/^/  /'
           else
-            echo "project.godot missing!"
+            echo "✗ project.godot missing!"
             exit 1
           fi
+          
+          # Check for essential directories
+          for dir in scenes scripts assets; do
+            if [ -d "$dir" ]; then
+              echo "✓ Directory '$dir' exists"
+            else
+              echo "✗ Directory '$dir' missing"
+            fi
+          done
+          
+          echo "Godot validation PASSED"
 
   game-screenshot:
     runs-on: ubuntu-latest
