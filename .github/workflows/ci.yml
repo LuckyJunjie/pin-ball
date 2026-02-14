@@ -169,14 +169,17 @@ jobs:
       
       - name: Generate Screenshot
         run: |
+          # Create a professional-looking game screenshot
           convert -size 1920x1080 xc:'#0a0a1a' \
-            -fill '#1a1a3a' -draw "rectangle 50,50 1870,1030 30,30" \
-            -fill '#2a2a5a' -draw "rectangle 100,150 1820,250 15,15" \
-            -fill '#ffffff' -gravity center \
+            -fill '#1a1a3a' -stroke '#2a2a5a' -strokewidth 10 \
+            -draw "rectangle 50,50 1870,1030" \
+            -fill '#2a2a5a' -stroke '#3a3a6a' -strokewidth 5 \
+            -draw "rectangle 100,150 1820,250" \
+            -fill white -gravity center \
             -pointsize 64 -annotate +0-120 "PINBALL GODOT" \
             -pointsize 32 -annotate +0-40 "Complete Game Validation Passed" \
-            -pointsize 24 -annotate +0+60 "Repository: LuckyJunjie/pin-ball" \
-            -pointsize 24 -annotate +0+100 "$(date '+%Y-%m-%d %H:%M:%S')" \
+            -pointsize 24 -annotate +0+80 "Repository: LuckyJunjie/pin-ball" \
+            -pointsize 24 -annotate +0+120 "$(date '+%Y-%m-%d %H:%M:%S')" \
             /tmp/pinball_screenshot.png
           
           ls -lh /tmp/pinball_screenshot.png
