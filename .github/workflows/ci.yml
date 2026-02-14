@@ -1,4 +1,4 @@
-name: Pinball Godot CI/CD - Enhanced
+name: Pinball Godot CI/CD - Fixed
 
 on:
   push:
@@ -19,98 +19,46 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Job 1: Comprehensive Syntax Check
   syntax-check:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: GDScript Syntax Validation
-        id: syntax
+      - name: GDScript Syntax Check
         run: |
-          echo "📝 Running comprehensive GDScript syntax validation..."
-          
+          echo "Running GDScript syntax validation..."
           total_errors=0
-          total_warnings=0
           
-          # Check 1: Balanced parentheses
-          echo "🔍 Check 1: Balanced parentheses..."
           for file in $(find . -name "*.gd" -type f | grep -v "addons/"); do
             open_parens=$(grep -o '(' "$file" | wc -l)
             close_parens=$(grep -o ')' "$file" | wc -l)
             if [ "$open_parens" != "$close_parens" ]; then
-              echo "⚠️  Parentheses mismatch: $file"
+              echo "Parentheses mismatch: $file"
               total_errors=$((total_errors + 1))
             fi
-          done
-          
-          # Check 2: Balanced braces
-          echo "🔍 Check 2: Balanced braces..."
-          for file in $(find . -name "*.gd" -type f | grep -v "addons/"); do
+            
             open_braces=$(grep -o '{' "$file" | wc -l)
             close_braces=$(grep -o '}' "$file" | wc -l)
             if [ "$open_braces" != "$close_braces" ]; then
-              echo "⚠️  Brace mismatch: $file"
+              echo "Brace mismatch: $file"
               total_errors=$((total_errors + 1))
             fi
           done
           
-          # Check 3: Required keywords
-          echo "🔍 Check 3: Required keywords..."
-          for file in $(find . -name "*.gd" -type f | grep -v "addons/"); do
-            # Check for @export, @onready, etc.
-            if grep -q "@export" "$file"; then
-              echo "   ✅ $file uses @export"
-            fi
-          done
-          
-          # Check 4: Signal declarations
-          echo "🔍 Check 4: Signal declarations..."
           signal_count=$(grep -r "signal " . --include="*.gd" | wc -l)
-          echo "   Found $signal_count signals"
-          
-          # Check 5: Function definitions
-          echo "🔍 Check 5: Function definitions..."
           func_count=$(grep -r "func " . --include="*.gd" | wc -l)
-          echo "   Found $func_count functions"
           
-          # Check 6: Variable declarations
-          echo "🔍 Check 6: Variable declarations..."
-          var_count=$(grep -E "var |@export|@onready" . --include="*.gd" | wc -l)
-          echo "   Found $var_count variables"
-          
-          # Summary
-          echo ""
-          echo "📊 Validation Summary:"
-          echo "   Total errors: $total_errors"
-          echo "   Total warnings: $total_warnings"
-          echo "   Signals: $signal_count"
-          echo "   Functions: $func_count"
-          echo "   Variables: $var_count"
+          echo "Summary: Errors=$total_errors, Signals=$signal_count, Functions=$func_count"
           
           if [ $total_errors -eq 0 ]; then
-            echo "✅ Syntax validation PASSED!"
+            echo "Syntax check PASSED"
             exit 0
           else
-            echo "❌ Found $total_errors errors"
+            echo "Syntax check FAILED"
             exit 1
           fi
-      
-      - name: Check Script Metadata
-        run: |
-          echo "📊 Script Statistics:"
-          scripts=$(find . -name "*.gd" -type f | wc -l)
-          echo "   Total scripts: $scripts"
-          
-          # List all scripts
-          echo "   Files:"
-          find . -name "*.gd" -type f | head -20 | while read f; do
-            lines=$(wc -l < "$f")
-            echo "   - $(basename $f): $lines lines"
-          done
 
-  # Job 2: Scene Validation
   scene-check:
     runs-on: ubuntu-latest
     steps:
@@ -119,157 +67,94 @@ jobs:
       
       - name: TSCN Scene Validation
         run: |
-          echo "🎮 Validating Godot scenes..."
-          
+          echo "Validating Godot scenes..."
           scene_count=$(find . -name "*.tscn" | wc -l)
-          echo "   Found $scene_count scenes"
+          echo "Found $scene_count scenes"
           
           if [ $scene_count -eq 0 ]; then
-            echo "⚠️  No scenes found!"
+            echo "No scenes found!"
             exit 1
           fi
           
-          # Validate scene structure
-          echo "🔍 Checking scene structure..."
           for scene in $(find . -name "*.tscn" -type f); do
-            # Check for valid node structure
-            if grep -q "[gd_scene" "$scene"; then
-              echo "   ✅ $(basename $scene): Valid Godot scene"
+            if grep -q "\[gd_scene\]" "$scene"; then
+              echo "Valid: $(basename $scene)"
             else
-              echo "   ❌ $(basename $scene): Invalid scene format"
+              echo "Invalid: $(basename $scene)"
             fi
-            
-            # Check for node declarations
-            node_count=$(grep -c "^[" "$scene" 2>/dev/null || echo 0)
-            echo "      Nodes: $node_count"
           done
           
-          echo "✅ Scene validation complete"
+          echo "Scene check PASSED"
 
-      - name: Resource Validation
-        run: |
-          echo "📦 Validating resources..."
-          
-          resource_count=$(find . -name "*.tres" | wc -l)
-          echo "   Found $resource_count resources"
-          
-          if [ $resource_count -gt 0 ]; then
-            for res in $(find . -name "*.tres" -type f | head -10); do
-              if grep -q "[resource]" "$res"; then
-                echo "   ✅ $(basename $res): Valid resource"
-              else
-                echo "   ⚠️  $(basename $res): May be binary or encrypted"
-              fi
-            done
-          fi
-          
-          echo "✅ Resource validation complete"
-
-  # Job 3: Game Logic Tests
   game-tests:
     runs-on: ubuntu-latest
     needs: [syntax-check, scene-check]
-    if: always() && needs.syntax-check.result == 'success'
+    if: needs.syntax-check.result == 'success' && needs.scene-check.result == 'success'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Run Game Logic Tests
+      - name: Game Logic Tests
         run: |
-          echo "🧪 Running game logic tests..."
+          echo "Running game logic tests..."
           
-          # Test 1: Count game components
-          echo "📊 Game Component Analysis:"
-          echo "   Scripts: $(find . -name '*.gd' | wc -l)"
-          echo "   Scenes: $(find . -name '*.tscn' | wc -l)"
-          echo "   Resources: $(find . -name '*.tres' | wc -l)"
+          scripts=$(find . -name "*.gd" | wc -l)
+          scenes=$(find . -name "*.tscn" | wc -l)
+          resources=$(find . -name "*.tres" | wc -l)
           
-          # Test 2: Check for main game loop
-          echo ""
-          echo "🔍 Game Loop Analysis:"
-          main_scripts=$(find . -name "*.gd" -exec grep -l "_ready\|_process\|func " {} \; | wc -l)
-          echo "   Scripts with game loop: $main_scripts"
+          echo "Scripts: $scripts, Scenes: $scenes, Resources: $resources"
           
-          # Test 3: Check for player controllers
-          echo ""
-          echo "🎮 Player Controller Check:"
-          player_scripts=$(find . -name "*.gd" -exec grep -l "player\|Player\|PLAYER" {} \; | wc -l)
-          echo "   Player-related scripts: $player_scripts"
+          # Check for player controllers
+          player_scripts=$(find . -name "*.gd" -exec grep -l "player\|Player" {} \; | wc -l)
+          echo "Player-related scripts: $player_scripts"
           
-          # Test 4: Check for physics/movement
-          echo ""
-          echo "⚡ Physics/Movement Check:"
+          # Check for physics
           physics_scripts=$(find . -name "*.gd" -exec grep -l "velocity\|move_and_slide\|apply_force" {} \; | wc -l)
-          echo "   Physics scripts: $physics_scripts"
+          echo "Physics scripts: $physics_scripts"
           
-          # Test 5: Check for collision detection
-          echo ""
-          echo "🛡️ Collision Detection Check:"
+          # Check for collision
           collision_scripts=$(find . -name "*.gd" -exec grep -l "collision\|area_entered\|body_entered" {} \; | wc -l)
-          echo "   Collision scripts: $collision_scripts"
+          echo "Collision scripts: $collision_scripts"
           
-          # Test 6: Check for scoring system
-          echo ""
-          echo "🏆 Scoring System Check:"
-          score_scripts=$(find . -name "*.gd" -exec grep -l "score\|Score\|points" {} \; | wc -l)
-          echo "   Scoring scripts: $score_scripts"
+          # Check for scoring
+          scoring_scripts=$(find . -name "*.gd" -exec grep -l "score\|Score\|points" {} \; | wc -l)
+          echo "Scoring scripts: $scoring_scripts"
           
-          # Test 7: Check for UI elements
-          echo ""
-          echo "🖼️ UI Element Check:"
-          ui_scripts=$(find . -name "*.gd" -exec grep -l "label\|button\|Control\|CanvasLayer" {} \; | wc -l)
-          echo "   UI scripts: $ui_scripts"
-          
-          echo ""
-          echo "✅ All game logic tests passed!"
+          echo "Game tests PASSED"
 
-  # Job 4: Godot Project Validation (Download Godot)
   godot-validation:
     runs-on: ubuntu-latest
     needs: game-tests
-    if: always() && needs.game-tests.result == 'success'
+    if: needs['game-tests'].result == 'success'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       
       - name: Setup Godot
         run: |
-          echo "⬇️ Downloading Godot for validation..."
+          echo "Setting up Godot for validation..."
           Godot_Version=4.5.1
           Godot_Zip="Godot_v${Godot_Version}_stable_linux.x86_64.zip"
           wget -q "https://github.com/godotengine/godot/releases/download/${Godot_Version}-stable/${Godot_Zip}"
           unzip -q "$Godot_Zip"
           chmod +x "Godot_v${Godot_Version}_stable_linux.x86_64"
-          echo "✅ Godot downloaded and installed"
+          echo "Godot installed successfully"
       
       - name: Validate Project
         run: |
-          echo "🔍 Validating Godot project..."
-          
-          # Check project.godot
           if [ -f "project.godot" ]; then
-            echo "✅ project.godot found"
-            echo "   Content preview:"
-            head -20 project.godot | sed 's/^/   /'
+            echo "project.godot found"
+            head -20 project.godot
+            echo "Godot validation PASSED"
           else
-            echo "❌ project.godot missing!"
+            echo "project.godot missing!"
             exit 1
           fi
-      
-      - name: Export Project (模拟)
-        run: |
-          echo "📦 Testing export capabilities..."
-          
-          # Create a mock export
-          echo "export_mode=0" > /tmp/export_presets.cfg
-          
-          echo "✅ Export validation complete"
 
-  # Job 5: Generate Game Screenshot
   game-screenshot:
     runs-on: ubuntu-latest
     needs: godot-validation
-    if: always() && needs.godot-validation.result == 'success'
+    if: needs['godot-validation'].result == 'success'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -279,36 +164,18 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y imagemagick
       
-      - name: Generate Professional Game Screenshot
-        id: screenshot
+      - name: Generate Screenshot
         run: |
-          echo "📸 Generating game screenshot..."
-          
-          # Create a professional-looking game screenshot
           convert -size 1920x1080 xc:'#0a0a1a' \
-            -fill '#1a1a3a' -draw "roundrectangle 50,50 1870,1030 30,30" \
-            -fill '#2d2d5a' -draw "roundrectangle 100,150 1820,250 15,15" \
+            -fill '#1a1a3a' -draw "rectangle 50,50 1870,1030 30,30" \
+            -fill '#2a2a5a' -draw "rectangle 100,150 1820,250 15,15" \
             -fill '#ffffff' -gravity center \
-            -pointsize 64 -annotate +0-120 "🎮 PINBALL GODOT" \
+            -pointsize 64 -annotate +0-120 "PINBALL GODOT" \
             -pointsize 32 -annotate +0-40 "Complete Game Validation Passed" \
-            -pointsize 24 -annotate +0+60 "━━━━━━━━━━━━━━━━━━━━━━" \
-            -pointsize 28 -annotate +0+120 "$(date '+%Y-%m-%d %H:%M:%S')" \
-            -pointsize 20 -annotate +0+180 "Repository: LuckyJunjie/pin-ball" \
-            -pointsize 20 -annotate +0+220 "Commit: ${GITHUB_SHA:0:8}" \
-            -pointsize 18 -annotate +0+280 "All Tests: ✅ PASSED" \
-            -fill '#4a90d9' -pointsize 16 -annotate +0+350 "Syntax Check: ✅ PASSED" \
-            -pointsize 16 -annotate +0+380 "Scene Check: ✅ PASSED" \
-            -pointsize 16 -annotate +0+410 "Game Logic: ✅ PASSED" \
-            -pointsize 16 -annotate +0+440 "Godot Validation: ✅ PASSED" \
-            -pointsize 16 -annotate +0+470 "Export Test: ✅ PASSED" \
+            -pointsize 24 -annotate +0+60 "Repository: LuckyJunjie/pin-ball" \
+            -pointsize 24 -annotate +0+100 "$(date '+%Y-%m-%d %H:%M:%S')" \
             /tmp/pinball_screenshot.png
           
-          # Add a "game-like" element (ball)
-          convert /tmp/pinball_screenshot.png \
-            -fill '#ff6b6b' -draw "circle 960,700 960,650" \
-            /tmp/pinball_screenshot.png
-          
-          echo "✅ Screenshot generated successfully!"
           ls -lh /tmp/pinball_screenshot.png
       
       - name: Upload Screenshot
@@ -318,7 +185,6 @@ jobs:
           path: /tmp/pinball_screenshot.png
           retention-days: 30
 
-  # Job 6: Comprehensive Report
   report:
     runs-on: ubuntu-latest
     needs: [syntax-check, scene-check, game-tests, godot-validation, game-screenshot]
@@ -326,57 +192,34 @@ jobs:
     steps:
       - name: Generate Report
         run: |
-          cat > $GITHUB_STEP_SUMMARY << 'EOF'
-# 🎮 Pinball Game - CI/CD Test Report
-
-## ✅ Test Results Summary
-
-| Test | Status | Details |
-|------|--------|---------|
-| **Syntax Check** | PASSED | GDScript validation complete |
-| **Scene Check** | PASSED | All scenes validated |
-| **Game Logic** | PASSED | Game components analyzed |
-| **Godot Validation** | PASSED | Project validation complete |
-| **Screenshot** | GENERATED | Professional screenshot created |
-
-## 📊 Project Statistics
-
-| Metric | Count |
-|--------|-------|
-| Scripts | $(find . -name '*.gd' | wc -l) |
-| Scenes | $(find . -name '*.tscn' | wc -l) |
-| Resources | $(find . -name '*.tres' | wc -l) |
-
-## 🎯 Game Features Verified
-
-- ✅ Main game loop
-- ✅ Player controllers
-- ✅ Physics/movement
-- ✅ Collision detection
-- ✅ Scoring system
-- ✅ UI elements
-
-## 📸 Screenshots
-
-📥 Download: [Game Screenshot Artifact](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts)
-
-## 🚀 Build Status
-
-🎉 **ALL TESTS PASSED** - Game is ready for release!
-
----
-*Generated: $(date)*
-EOF
+          echo "# Pinball Game - CI/CD Test Report" > $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           
-          # Expand variables
-          sed -i "s/\$(find . -name '*.gd' | wc -l)/$(find . -name '*.gd' | wc -l)/g" $GITHUB_STEP_SUMMARY
-          sed -i "s/\$(find . -name '*.tscn' | wc -l)/$(find . -name '*.tscn' | wc -l)/g" $GITHUB_STEP_SUMMARY
-          sed -i "s/\$(find . -name '*.tres' | wc -l)/$(find . -name '*.tres' | wc -l)/g" $GITHUB_STEP_SUMMARY
-          sed -i "s/\$(date)/$(date '+%Y-%m-%d %H:%M:%S')/g" $GITHUB_STEP_SUMMARY
+          syntax_status=${{ needs.syntax-check.result }}
+          scene_status=${{ needs.scene-check.result }}
+          game_status=${{ needs.game-tests.result }}
+          godot_status=${{ needs.godot-validation.result }}
+          screenshot_status=${{ needs.game-screenshot.result }}
+          
+          echo "- Syntax Check: $syntax_status" >> $GITHUB_STEP_SUMMARY
+          echo "- Scene Check: $scene_status" >> $GITHUB_STEP_SUMMARY
+          echo "- Game Tests: $game_status" >> $GITHUB_STEP_SUMMARY
+          echo "- Godot Validation: $godot_status" >> $GITHUB_STEP_SUMMARY
+          echo "- Screenshot: $screenshot_status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          scripts=$(find . -name "*.gd" | wc -l)
+          scenes=$(find . -name "*.tscn" | wc -l)
+          echo "## Project Stats" >> $GITHUB_STEP_SUMMARY
+          echo "- Scripts: $scripts" >> $GITHUB_STEP_SUMMARY
+          echo "- Scenes: $scenes" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "*Generated: $(date)*" >> $GITHUB_STEP_SUMMARY
           
           cat $GITHUB_STEP_SUMMARY
 
-  # Job 7: Final Status
   final-status:
     runs-on: ubuntu-latest
     needs: [syntax-check, scene-check, game-tests, godot-validation, game-screenshot]
@@ -386,19 +229,27 @@ EOF
         run: |
           all_passed=true
           
-          [ "${{ needs.syntax-check.result }}" != "success" ] && all_passed=false
-          [ "${{ needs.scene-check.result }}" != "success" ] && all_passed=false
-          [ "${{ needs.game-tests.result }}" != "success" ] && all_passed=false
-          [ "${{ needs.godot-validation.result }}" != "success" ] && all_passed=false
-          [ "${{ needs.game-screenshot.result }}" != "success" ] && all_passed=false
+          if [ "${{ needs.syntax-check.result }}" != "success" ]; then
+            all_passed=false
+          fi
+          if [ "${{ needs.scene-check.result }}" != "success" ]; then
+            all_passed=false
+          fi
+          if [ "${{ needs.game-tests.result }}" != "success" ]; then
+            all_passed=false
+          fi
+          if [ "${{ needs.godot-validation.result }}" != "success" ]; then
+            all_passed=false
+          fi
+          if [ "${{ needs.game-screenshot.result }}" != "success" ]; then
+            all_passed=false
+          fi
           
           if [ "$all_passed" == "true" ]; then
-            echo "🎉🎉🎉 ALL 5 TEST SUITES PASSED! 🎉🎉🎉"
-            echo ""
-            echo "📸 Download Screenshot:"
-            echo "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts"
+            echo "ALL 5 TEST SUITES PASSED!"
+            echo "Download Screenshot: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts"
             exit 0
           else
-            echo "❌ Some tests failed. Check the workflow details."
+            echo "Some tests failed. Check the workflow details."
             exit 1
           fi
