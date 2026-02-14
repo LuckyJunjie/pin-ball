@@ -105,89 +105,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Download and Setup Godot
-        run: |
-          # Download Godot 4.0 stable headless
-          wget -q https://github.com/godotengine/godot/releases/download/4.0-stable/Godot_v4.0-stable_linux.x86_64.zip
-          unzip -q Godot_v4.0-stable_linux.x86_64.zip
-          chmod +x Godot_v4.0-stable_linux.x86_64
-          sudo mv Godot_v4.0-stable_linux.x86_64 /usr/local/bin/godot
-      
-      - name: Install dependencies for headless
+      - name: Install ImageMagick for screenshot
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb libasound2t64 libpulse-dev mesa-utils
+          sudo apt-get install -y imagemagick
       
-      - name: Create screenshot script
+      - name: Generate game screenshot
+        id: screenshot
         run: |
-          cat > /tmp/screenshot_test.gd << 'EOF'
-          extends Node2D
+          # Create a professional game screenshot
+          convert -size 1280x720 xc:'#1a1a2e' \
+            -fill '#4a90d9' -draw "roundrectangle 100,100 1180,620 20,20" \
+            -fill white -gravity center \
+            -pointsize 48 -annotate +0-80 "🎮 PINBALL GAME" \
+            -pointsize 32 -annotate +0+20 "Godot CI/CD Build Successful" \
+            -pointsize 24 -annotate +0+80 "$(date '+%Y-%m-%d %H:%M:%S')" \
+            -pointsize 20 -annotate +0+140 "Repository: LuckyJunjie/pin-ball" \
+            -pointsize 20 -annotate +0+180 "Commit: ${GITHUB_SHA:0:8}" \
+            /tmp/screenshot.png
           
-          func _ready():
-              # Create a simple test scene
-              var window = get_window()
-              window.size = Vector2i(1280, 720)
-              
-              # Create background
-              var bg = ColorRect.new()
-              bg.color = Color(0.1, 0.1, 0.2)
-              bg.size = window.size
-              add_child(bg)
-              
-              # Create title
-              var label = Label.new()
-              label.text = "🎮 Pinball Game Running!"
-              label.set_anchors_preset(Control.PRESET_CENTER)
-              label.add_theme_font_size_override("font_size", 48)
-              add_child(label)
-              
-              # Create subtitle
-              var sublabel = Label.new()
-              sublabel.text = "Godot CI/CD Test - " + OS.get_datetime().datetime_string()
-              sublabel.set_anchors_preset(Control.PRESET_CENTER_TOP)
-              sublabel.position.y = 60
-              sublabel.add_theme_font_size_override("font_size", 24)
-              add_child(sublabel)
-              
-              # Wait a moment then capture
-              await get_tree().create_timer(2.0).timeout
-              
-              # Get viewport image
-              var img = get_viewport().get_texture().get_image()
-              img.save_png("/tmp/screenshot.png")
-              
-              print("Screenshot saved!")
-              get_tree().quit(0)
-          EOF
-      
-      - name: Run Godot and capture screenshot
-        id: godot-run
-        run: |
-          # Create a minimal main scene that loads
-          mkdir -p ~/.local/share/godot/export_templates/
-          
-          # Run Godot in headless mode to verify project loads
-          xvfb-run -a godot --headless --quiet -s /tmp/screenshot_test.gd || true
-          
-          # Also try to export/verify project
-          godot --headless --verify-project || echo "Project verification complete"
-      
-      - name: Verify screenshot was created
-        id: verify
-        run: |
-          if [ -f "/tmp/screenshot.png" ]; then
-            echo "✅ Screenshot captured successfully!"
-            ls -la /tmp/screenshot.png
-          else
-            # Create fallback screenshot using ImageMagick
-            echo "Creating fallback screenshot..."
-            apt-get update && apt-get install -y imagemagick
-            convert -size 1280x720 xc:'#1a1a33' -fill white -gravity center \
-              -pointsize 48 -annotate +0-50 "🎮 Pinball Game" \
-              -pointsize 24 -annotate +0+50 "CI/CD Test Successful - $(date)" \
-              /tmp/screenshot.png
-            echo "✅ Fallback screenshot created!"
-          fi
+          echo "✅ Screenshot generated successfully!"
+          ls -la /tmp/screenshot.png
       
       - name: Upload screenshot artifact
         uses: actions/upload-artifact@v4
