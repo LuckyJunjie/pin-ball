@@ -200,3 +200,29 @@ func add_visual_label(text: String):
 	label.add_theme_constant_override("outline_size", 2)
 	label.position = Vector2(-30, -20)  # Offset from center
 	add_child(label)
+
+# TC-010: Quick succession test helper
+var last_press_time: float = 0.0
+
+func _test_quick_press_detection():
+	"""TC-010: Test quick succession response time"""
+	var current_time = Time.get_ticks_msec()
+	var time_diff = current_time - last_press_time
+	last_press_time = current_time
+	
+	# Log for TC-010: should be < 100ms for good response
+	if time_diff < 100:
+		if _get_debug_mode():
+			print("TC-010-PASS: Quick press detected: %d ms" % time_diff)
+	return time_diff
+
+func _get_test_results() -> Dictionary:
+	"""Return test results for CI/CD validation"""
+	return {
+		"flipper_side": flipper_side,
+		"rest_angle": rest_angle,
+		"pressed_angle": pressed_angle,
+		"rotation_speed": rotation_speed,
+		"flipper_strength": flipper_strength,
+		"is_ready": true
+	}
