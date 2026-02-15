@@ -116,8 +116,8 @@ def wait_for_completion(run_id, timeout=300):
                     print(f"\n✅ Workflow completed!")
                     print(f"   Conclusion: {conclusion}")
                     return conclusion
-                elif status == 'in or status == 'queued':
-                    print_progress'(f"   Status: {status}...")
+                elif status == 'in_progress' or status == 'queued':
+                    print(f"   Status: {status}...")
                     time.sleep(10)
                 else:
                     print(f"   Status: {status}")
