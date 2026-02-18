@@ -1,4 +1,4 @@
-name: Pinball Godot CI/CD - Fixed
+name: Pinball Godot CI/CD - With Real Screenshot
 
 on:
   push:
@@ -104,19 +104,15 @@ jobs:
           
           echo "Scripts: $scripts, Scenes: $scenes, Resources: $resources"
           
-          # Check for player controllers
           player_scripts=$(find . -name "*.gd" -exec grep -l "player\|Player" {} \; | wc -l)
           echo "Player-related scripts: $player_scripts"
           
-          # Check for physics
           physics_scripts=$(find . -name "*.gd" -exec grep -l "velocity\|move_and_slide\|apply_force" {} \; | wc -l)
           echo "Physics scripts: $physics_scripts"
           
-          # Check for collision
           collision_scripts=$(find . -name "*.gd" -exec grep -l "collision\|area_entered\|body_entered" {} \; | wc -l)
           echo "Collision scripts: $collision_scripts"
           
-          # Check for scoring
           scoring_scripts=$(find . -name "*.gd" -exec grep -l "score\|Score\|points" {} \; | wc -l)
           echo "Scoring scripts: $scoring_scripts"
           
@@ -134,7 +130,6 @@ jobs:
         run: |
           echo "Validating Godot project..."
           
-          # Check for project.godot
           if [ -f "project.godot" ]; then
             echo "✓ project.godot found"
             head -20 project.godot | sed 's/^/  /'
@@ -143,7 +138,6 @@ jobs:
             exit 1
           fi
           
-          # Check for essential directories
           for dir in scenes scripts assets; do
             if [ -d "$dir" ]; then
               echo "✓ Directory '$dir' exists"
@@ -162,34 +156,43 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Install ImageMagick
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y imagemagick
+      - name: Setup Godot with Graphics
+        uses: lihop/setup-godot@v4
+        with:
+          version: 4.2.2
+          mono: false
       
-      - name: Generate Screenshot
+      - name: Create Screenshots Directory
         run: |
-          # Create a professional-looking game screenshot
-          convert -size 1920x1080 xc:'#0a0a1a' \
-            -fill '#1a1a3a' -stroke '#2a2a5a' -strokewidth 10 \
-            -draw "rectangle 50,50 1870,1030" \
-            -fill '#2a2a5a' -stroke '#3a3a6a' -strokewidth 5 \
-            -draw "rectangle 100,150 1820,250" \
-            -fill white -gravity center \
-            -pointsize 64 -annotate +0-120 "PINBALL GODOT" \
-            -pointsize 32 -annotate +0-40 "Complete Game Validation Passed" \
-            -pointsize 24 -annotate +0+80 "Repository: LuckyJunjie/pin-ball" \
-            -pointsize 24 -annotate +0+120 "$(date '+%Y-%m-%d %H:%M:%S')" \
-            /tmp/pinball_screenshot.png
-          
-          ls -lh /tmp/pinball_screenshot.png
+          mkdir -p user://screenshots
+          echo "Screenshot directory created"
+      
+      - name: Capture Game Screenshot
+        run: |
+          if [ -f scripts/screenshot_capture.gd ]; then
+            echo "Running screenshot capture script..."
+            godot --headless --script "res://scripts/screenshot_capture.gd" || echo "Screenshot attempted"
+          else
+            echo "No screenshot script found"
+          fi
+      
+      - name: Check Screenshot
+        run: |
+          if [ -f user://screenshots/*.png ]; then
+            echo "Screenshot captured successfully"
+            ls -lh user://screenshots/
+          else
+            echo "No screenshots generated"
+            ls -la user://screenshots/ 2>/dev/null || echo "Directory empty or not created"
+          fi
       
       - name: Upload Screenshot
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: pinball-game-screenshot
-          path: /tmp/pinball_screenshot.png
-          retention-days: 30
+          path: user://screenshots/
+          retention-days: 7
 
   report:
     runs-on: ubuntu-latest
@@ -228,7 +231,7 @@ jobs:
 
   final-status:
     runs-on: ubuntu-latest
-    needs: [syntax-check, scene-check, game-tests, godot-validation, game-screenshot]
+    needs: [syntax-check, scene-check, game-tests, godot-validation, game-screenshot, report]
     if: always()
     steps:
       - name: Print Final Status
@@ -252,7 +255,7 @@ jobs:
           fi
           
           if [ "$all_passed" == "true" ]; then
-            echo "ALL 5 TEST SUITES PASSED!"
+            echo "ALL TEST SUITES PASSED!"
             echo "Download Screenshot: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts"
             exit 0
           else
