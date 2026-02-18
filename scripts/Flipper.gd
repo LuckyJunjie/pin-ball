@@ -40,7 +40,7 @@ func _ready():
 	gravity_scale = 0.0
 	lock_rotation = false
 	freeze_mode = RigidBody2D.FREEZE_MODE_KINEMATIC
-	freeze = true  # Freeze the body, we'll control rotation manually
+	freeze = false  # DON'T freeze - we need physics collision!
 	collision_layer = 2  # Flipper layer
 	collision_mask = 1  # Collide with ball
 	mass = 1.0
