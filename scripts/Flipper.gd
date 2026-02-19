@@ -226,3 +226,8 @@ func _get_test_results() -> Dictionary:
 		"flipper_strength": flipper_strength,
 		"is_ready": true
 	}
+
+
+func get_flipper_side() -> String:
+	"""Return the flipper side for collision detection"""
+	return flipper_side

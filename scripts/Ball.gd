@@ -42,6 +42,10 @@ func _ready():
 	# Enable continuous collision detection to prevent tunneling through walls
 	continuous_cd = RigidBody2D.CCD_MODE_CAST_SHAPE
 	max_contacts_reported = 4
+	contact_monitor = true  # Enable collision signal monitoring
+	
+	# Connect collision signal
+	body_entered.connect(_on_body_entered)
 	
 	# Set collision layers
 	collision_layer = 1  # Ball layer
@@ -116,6 +120,29 @@ func _physics_process(_delta):
 			print("[Ball] Ball lost! Position: ", global_position, " (threshold: ", respawn_y_threshold, ")")
 		has_emitted_lost = true
 		ball_lost.emit()
+
+func _on_body_entered(body: Node2D):
+	"""Handle collision with other bodies"""
+	if _get_debug_mode():
+		print("[Ball] Collision with: ", body.name, " (type: ", body.get_class(), ")")
+	
+	# Check if collision is with a flipper
+	if body.has_method("get_flipper_side"):
+		var flipper_side = body.get_flipper_side()
+		var flipper_strength = body.get("flipper_strength") if body.has("flipper_strength") else 1500.0
+		
+		# Apply impulse based on flipper direction
+		var impulse_direction = Vector2.UP
+		if flipper_side == "right":
+			impulse_direction = Vector2.UP.rotated(deg_to_rad(-30))
+		else:
+			impulse_direction = Vector2.UP.rotated(deg_to_rad(30))
+		
+		# Apply stronger impulse for flipper hit
+		apply_impulse(impulse_direction * flipper_strength * 0.5)
+		
+		if _get_debug_mode():
+			print("[Ball] Flipper hit! Side: ", flipper_side, ", Strength: ", flipper_strength)
 
 func reset_ball():
 	"""Reset ball to initial position with zero velocity"""
