@@ -1,6 +1,6 @@
 # Pinball CI/CD 截图状态报告
 
-> 更新日期: 2026-02-19 17:10 (Asia/Shanghai)
+> 更新日期: 2026-02-19 20:10 (Asia/Shanghai)
 > 调查者: Vanguard001 (Cron自动任务)
 
 ---
@@ -10,10 +10,12 @@
 | 项目 | 状态 | 说明 |
 |------|------|------|
 | **截图文件** | ✅ 存在且有效 | latest_screenshot.png (51KB, 1920x1080, PNG) |
-| **文件时间戳** | ✅ 2026-02-19 12:42 | 约4.5小时前更新 |
+| **文件时间戳** | ⚠️ 7小时前 | 2026-02-19 12:42 (最后更新) |
 | **文件格式** | ✅ PNG有效 | 16-bit/color RGBA, non-interlaced |
 | **图片内容** | ✅ 有效占位图 | ImageMagick 生成的占位图 |
 | **Git状态** | ❌ 未同步 | screenshots/ 目录是 untracked |
+| **CI最近运行** | ✅ 成功 | 2026-02-19 11:40 (成功) |
+| **CI历史** | ✅ 持续成功 | 最近5次运行全部成功 |
 
 ---
 
@@ -24,7 +26,7 @@
 ```
 ✅ 文件存在: /home/pi/.openclaw/workspace/game/pin-ball/screenshots/latest_screenshot.png
 ✅ 有效PNG: 51,397 bytes, 1920x1080, 16-bit/color RGBA
-✅ 时间戳: 2026-02-19 12:42:39 (4.5小时前)
+✅ 时间戳: 2026-02-19 12:42:39 (7小时前)
 ✅ 图片内容: ImageMagick 生成的占位图 (蓝色背景 + 文字)
 ```
 
@@ -32,160 +34,112 @@
 
 ### CI/CD 分析
 
-**当前CI工作流** (`.github/workflows/ci.yml`):
+**最近 CI/CD 运行** (Run ID: 22180271100):
+- 状态: ✅ 成功
+- 时间: 2026-02-19 11:40:05Z
+- 耗时: 1m12s
 
-✅ **已实现**:
-- syntax-check: GDScript 语法检查
-- scene-check: 场景验证
-- game-tests: 游戏逻辑测试
-- godot-validation: 项目结构验证
-- game-screenshot: 使用 ImageMagick 生成占位图 + artifact 上传
-- report: 生成报告
-- final-status: 最终状态
-
-❌ **缺失**:
-- **无 artifact 下载步骤** - 截图仅保存在 GitHub (7天保留期)
-- **无 git commit 步骤** - 截图未纳入版本控制
-- **无 git push 步骤** - 截图未同步到远程仓库
-
-### 根本原因分析
-
-| 问题 | 根本原因 | 影响 |
-|------|----------|------|
-| 截图未同步到Git | CI缺少 download-artifact + commit + push 步骤 | screenshots/ 目录一直是 untracked |
-| 使用占位图 | Godot headless截图不稳定，采用ImageMagick降级方案 | 截图不是真实游戏画面 |
-| 时间戳未更新 | 无新的 push 触发 CI | 截图时间停留在 12:42 |
-
-### 时间线
-
-| 时间 | 事件 | 状态 |
-|------|------|------|
-| 2026-02-19 12:42 | 本地生成截图 | ✅ 成功 |
-| 2026-02-19 16:10 | 深度研究报告 | ✅ 完成 |
-| 2026-02-19 17:10 | 复查截图状态 | ✅ 截图有效，待触发CI |
+**工作流详情**:
+- syntax-check: ✅ PASSED
+- scene-check: ✅ PASSED  
+- game-tests: ✅ PASSED
+- godot-validation: ✅ PASSED
+- game-screenshot: ✅ 生成并上传 artifact
+- report: ✅ PASSED
+- final-status: ✅ "Screenshot artifact ready for download"
 
 ---
 
-## 🎯 建议解决方案
+## 🔴 发现的问题
 
-### P0 - 添加截图同步到CI
+### 问题: 截图未自动同步到本地
 
-在 `.github/workflows/ci.yml` 末尾添加新 job:
+**根本原因分析**:
+1. ✅ CI/CD 正常运行，成功生成截图
+2. ✅ 截图已上传到 GitHub artifact（保留7天）
+3. ❌ **缺少 artifact 下载步骤** - 截图未自动下载到本地
+4. ❌ **缺少 git commit 步骤** - 截图未纳入版本控制
+
+**当前流程**:
+```
+GitHub Actions → 生成截图 → 上传 artifact (7天保留) ❌ 未下载到本地
+```
+
+**期望流程**:
+```
+GitHub Actions → 生成截图 → 上传 artifact → 下载 artifact → git commit → 本地同步
+```
+
+---
+
+## 💡 解决方案
+
+### 方案1: 在 CI workflow 中添加 artifact 下载 (P1)
+
+在 `.github/workflows/ci.yml` 中添加步骤：
 
 ```yaml
-sync-screenshot:
-  name: Sync Screenshot to Git
-  runs-on: ubuntu-latest
-  needs: game-screenshot
-  steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-
-    - name: Download Screenshot
-      uses: actions/download-artifact@v4
-      with:
-        name: pinball-game-screenshot
-        path: screenshots/
-
-    - name: Configure Git
-      run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-
-    - name: Commit & Push Screenshot
-      run: |
-        git add screenshots/
-        if git diff --quiet; then
-          echo "No changes to commit"
-        else
-          git commit -m "docs: Update screenshot $(date '+%Y-%m-%d %H:%M')"
-          git push origin main
-        fi
+- name: Download and Commit Screenshot
+  if: github.event_name == 'push'
+  run: |
+    # 下载最新 artifact
+    gh run download ${{ github.run_id }} -n pinball-game-screenshot --dir screenshots/
+    
+    # 重命名文件
+    mv screenshots/pinball_screenshot.png screenshots/latest_screenshot.png
+    
+    # Git commit
+    git config --local user.email "ci@github.com"
+    git config --local user.name "CI Bot"
+    git add screenshots/
+    git commit -m "[CI] Update screenshot $(date '+%Y-%m-%d %H:%M')" || echo "No changes"
+    git push
 ```
 
-**优点**:
-- 自动同步截图到仓库
-- 保留截图历史
-- 无需手动操作
+**优点**: 完全自动化  
+**缺点**: 需要仓库写权限
 
-### P1 - 触发CI更新截图
+### 方案2: 本地 cron job 定期下载 (P2)
+
+添加本地 cron job 定期下载 artifact：
 
 ```bash
-cd /home/pi/.openclaw/workspace/game/pin-ball
-git add -A
-git commit -m "chore: Trigger CI screenshot update $(date '+%Y-%m-%d %H:%M')"
-git push origin main
+gh run list --repo LuckyJunjie/pin-ball --status success --limit 1 --json id | \
+  jq -r '.[0].id' | xargs -I {} gh run download {} -n pinball-game-screenshot --dir screenshots/
 ```
 
-这将触发CI生成新的截图并更新时间戳。
+**优点**: 不需要修改 CI  
+**缺点**: 需要维护本地 cron
+
+### 方案3: 手动同步 (临时方案)
+
+手动执行下载命令：
+
+```bash
+gh run download 22180271100 -n pinball-game-screenshot --dir /tmp/
+cp /tmp/pinball_screenshot.png screenshots/latest_screenshot.png
+```
+
+**优点**: 立即生效  
+**缺点**: 需要手动执行
 
 ---
 
-## 📋 执行清单
+## 📋 建议行动计划
 
-### 立即执行 (P0)
-
-- [x] 截图状态检查 - 文件存在且有效
-- [x] 问题分析 - CI缺少同步步骤
-- [ ] 更新 CI workflow - 添加 sync-screenshot job
-- [ ] 测试同步功能 - 触发CI并验证
-
-### 后续任务 (P1)
-
-- [ ] 推送代码触发CI
-- [ ] 验证新截图时间戳更新
-- [ ] 确认截图出现在git历史中
-
-### 可选优化 (P2)
-
-- [ ] 考虑真实Godot截图方案
-- [ ] 优化截图生成脚本
+| 优先级 | 任务 | 状态 | 负责人 |
+|--------|------|------|--------|
+| P0 | 手动同步当前截图 | 待执行 | Vanguard001 |
+| P1 | 修改 CI workflow 添加自动下载+commit | 待开发 | Vanguard001 |
+| P2 | 测试 CI/CD 自动同步功能 | 待测试 | - |
 
 ---
 
-## 📊 研究总结
+## 📝 研究结论
 
-### 截图状态检查
-- ✅ **文件存在**: 有效 PNG (51KB, 1920x1080)
-- ✅ **格式正确**: 16-bit/color RGBA
-- ✅ **时间戳**: 2026-02-19 12:42 (4.5小时前)
-- ⚠️ **类型**: 占位图 (已知限制)
+**截图状态**: ⚠️ 需要同步  
+**问题**: 截图未自动从 GitHub artifact 下载到本地  
+**根本原因**: CI workflow 缺少 artifact 下载和 git commit 步骤  
+**建议解决方案**: 修改 CI workflow 实现完全自动化（P1）  
 
-### 发现的问题
-1. ✅ **截图本身正常** - 无损坏，无空文件
-2. ❌ **未同步到Git** - screenshots/ 目录是 untracked
-3. ❌ **CI缺少同步步骤** - 需要添加 sync-screenshot job
-4. ⚠️ **时间戳过期** - 4.5小时无更新，需要触发CI
-
-### 根本原因
-- CI使用ImageMagick占位图是**已知且合理的降级方案**
-- CI缺少 artifact download + commit + push 步骤
-- 截图仅保存在 GitHub Actions (7天保留期)
-- 无新push触发CI运行
-
-### 优先级
-
-| 优先级 | 任务 | 预计工作量 |
-|--------|------|------------|
-| **P0** | 添加 sync-screenshot job 到 CI | 30分钟 |
-| **P1** | 推送代码触发CI更新截图 | 5分钟 |
-| **P1** | 验证同步功能正常工作 | 15分钟 |
-| **P2** | 考虑真实Godot截图方案 | 待评估 |
-
----
-
-## 📈 预期结果
-
-| 目标 | 状态 | 说明 |
-|------|------|------|
-| 截图文件存在且有效 | ✅ 已确认 | 51KB, 1920x1080 PNG |
-| CI能生成截图 | ✅ 已实现 | ImageMagick 占位图 |
-| 截图同步到Git | ⏳ 待实现 | 需要添加同步步骤 |
-| 截图保留历史记录 | ⏳ 待实现 | 需要 commit + push |
-| 截图保留7天以上 | ⏳ 待实现 | 目前7天会过期 |
-
----
-
-*报告更新时间: 2026-02-19 17:10 UTC+8*
-*自动任务: 每4小时执行一次深度检查*
+**当前状态**: CI/CD 运行正常，截图生成正常，只是未同步到本地。
