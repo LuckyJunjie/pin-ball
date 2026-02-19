@@ -231,3 +231,9 @@ func _get_test_results() -> Dictionary:
 func get_flipper_side() -> String:
 	"""Return the flipper side for collision detection"""
 	return flipper_side
+
+
+func set_pressed(pressed: bool) -> void:
+	"""External method to set flipper pressed state"""
+	if pressed != is_pressed:
+		is_pressed = pressed
