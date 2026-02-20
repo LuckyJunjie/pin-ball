@@ -1,7 +1,75 @@
 # Pinball CI/CD 截图状态报告
 
-> 更新日期: 2026-02-20 14:40 (Asia/Shanghai)
+> 更新日期: 2026-02-20 15:10 (Asia/Shanghai)
 > 调查者: Vanguard001 (Cron自动任务)
+
+---
+
+## 📊 15:10 研究更新 - 最新发现
+
+### 状态检查
+
+| 项目 | 状态 | 详情 |
+|------|------|------|
+| **latest_screenshot.png** | ⚠️ 需更新 | 51,542 bytes - Feb 19 20:41 (约18.5小时前) |
+| **游戏截图** | ✅ 存在 | pinball_01-04_menu/game/play/launch.png (各~541KB) |
+| **CI最新运行** | ✅ 成功 | Run #22214050530 @ 06:32 CST |
+| **Git状态** | ✅ 已同步 | Working tree clean |
+
+### 🔍 新发现
+
+**截图文件详情**:
+- `latest_screenshot.png`: Feb 19 20:41 (旧占位图, 51KB)
+- `pinball_01_menu.png`: Feb 20 14:31 (commit c67a737)
+- `pinball_02_game.png`: Feb 20 14:31 (commit c67a737)  
+- `pinball_03_play.png`: Feb 20 14:31 (commit c67a737)
+- `pinball_04_launch.png`: Feb 20 14:31 (commit c67a737)
+
+**关键发现**: 真实游戏截图已存在! 但 `latest_screenshot.png` 未更新。
+
+### ❌ 确认的问题
+
+**CI Sync Bug (已确认)**:
+```yaml
+# ci.yml 第98行 - 错误逻辑:
+if git diff --quiet; then        # ❌ 工作目录vs索引(相同)
+  echo "No changes to commit"
+# 正确应该是:
+if git diff --cached --quiet; then  # ✅ 索引vs最新commit
+```
+
+**根因**: `git add` 后立即检查 `git diff --quiet`，此时工作目录和索引已相同。
+
+### 建议解决方案
+
+**P0 - 修复 CI sync bug**:
+```yaml
+- name: Commit Screenshot
+  run: |
+    git add screenshots/
+    if git diff --cached --quiet; then  # 修复: 使用 --cached
+      echo "No changes to commit"
+    else
+      git commit -m "docs: Update game screenshot $(date '+%Y-%m-%d %H:%M')"
+      git push origin main
+    fi
+```
+
+**P1 - 手动更新 latest_screenshot.png**:
+```bash
+cp screenshots/pinball_01_menu.png screenshots/latest_screenshot.png
+git add screenshots/latest_screenshot.png
+git commit -m "docs: Update latest screenshot"
+git push
+```
+
+### 优先级
+
+| 优先级 | 任务 | 状态 |
+|--------|------|------|
+| P0 | 修复CI sync bug | 立即处理 |
+| P1 | 手动更新latest截图 | 后续处理 |
+| P1 | 替换为Godot实际截图 | 长期 |
 
 ---
 
