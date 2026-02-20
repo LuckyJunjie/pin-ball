@@ -1,59 +1,198 @@
 # Pinball CI/CD 截图状态报告
 
-> 更新日期: 2026-02-20 13:10 (Asia/Shanghai)
+> 更新日期: 2026-02-20 14:40 (Asia/Shanghai)
 > 调查者: Vanguard001 (Cron自动任务)
 
 ---
 
-## 📊 13:10 研究更新
+## 📊 14:40 研究更新 - 深度分析
 
 ### 状态检查
 
 | 项目 | 状态 | 详情 |
 |------|------|------|
 | **截图文件** | ✅ 存在 | latest_screenshot.png (51,542 bytes) |
-| **文件时间戳** | ⚠️ 16.5小时前 | 2026-02-19 20:41:55 |
-| **CI最新运行** | ✅ 成功 | Run #22180271100 @ 19:40 CST (约17.5小时前) |
+| **文件时间戳** | ⚠️ 17.5小时前 | 2026-02-19 20:41:55 |
+| **CI最新运行** | ✅ 成功 | Run #22214050530 @ 06:32 CST (约8小时前) |
 | **CI连续成功** | ✅ 5/5 | 最近5次运行全部成功 |
 | **截图内容** | ℹ️ 占位图 | ImageMagick生成，非实际游戏画面 |
-| **本地Git** | ✅ 已同步 | 与 origin/main 同步 (12:40 docs commit已同步) |
+| **本地Git** | ⚠️ 2 commits ahead | 待推送 |
 
-### CI触发规则分析
+### 🔍 深度分析发现
 
-**发现**: 文档提交不触发CI ✅ (设计如此)
+**14:40 CI运行详情**:
+- Run ID: 22214050530
+- 状态: ✅ success
+- 触发: push (commit: "test: Add gameplay screenshots")
+- 运行时间: 2026-02-20 06:32:35Z
 
-Workflow path filter配置:
-```yaml
-on:
-  push:
-    branches: [main, master]
-    paths:
-      - '**.gd'       # Godot脚本
-      - '**.tscn'     # 场景文件
-      - '**.tres'     # 资源文件
-      - '**.cfg'      # 配置文件
-      - '.github/workflows/*.yml'
+**CI Jobs状态**:
+```
+✓ syntax-check         (4s)
+✓ scene-check          (6s)
+✓ game-tests           (3s)
+✓ godot-validation     (6s)
+✓ game-screenshot      (22s) - 生成了6个截图文件
+✓ Download & Sync      (8s) - ⚠️ "No changes to commit"
+✓ report               (2s)
+✓ final-status         (2s)
 ```
 
-这意味着:
-- ❌ `docs: Update screenshot status` 不触发CI (正确)
-- ✅ 代码更改会触发CI (如 `fix: Add set_pressed method`)
+**Artifact上传成功**:
+- 上传了6个文件: latest_screenshot.png, pinball_01_menu.png, pinball_02_game.png, pinball_03_play.png, pinball_04_launch.png, pinball_screenshot.png
+- 总大小: 2,160,309 bytes
 
-### 13:10 研究结论
+### ❌ 发现的核心问题
 
-**截图状态**: ✅ 正常 - 无变化（距上次有效CI约17.5小时）
+**问题1: CI Sync Bug - "No changes to commit"**
+
+**根因分析**:
+```yaml
+# 当前workflow中的错误逻辑:
+- name: Commit Screenshot
+  run: |
+    git add screenshots/
+    if git diff --quiet; then      # ❌ 错误!
+      echo "No changes to commit"
+    else
+      git commit -m "docs: Update screenshot"
+      git push
+    fi
+```
+
+**问题**: `git diff --quiet` 在 `git add` 之后检查工作目录vs索引，两者已经相同，所以永远返回 "no changes"。
+
+**正确逻辑应该是**:
+```yaml
+if git diff --cached --quiet; then  # ✅ 检查索引vs最新commit
+  echo "No changes to commit"
+```
+
+**问题2: Git只跟踪1个截图文件**
+
+```bash
+$ git ls-files screenshots/
+screenshots/latest_screenshot.png  # 只跟踪了这一个!
+```
+
+- CI生成6个截图文件
+- 但git只跟踪 `latest_screenshot.png`
+- 其他5个文件 (pinball_01_menu.png 等) 未跟踪
+
+**问题3: 占位图，非实际游戏截图**
+
+当前CI使用ImageMagick生成占位图:
+```yaml
+convert -size 1920x1080 xc:'#0a0a1a' \
+  -draw "rectangle 50,50 1870,1030" \
+  -annotate +0-120 "🎮 PINBALL GODOT" \
+  -annotate +0-40 "✅ CI/CD Validation Passed" \
+  screenshots/pinball_screenshot.png
+```
+
+这不是实际游戏画面，仅作为CI验证标记。
+
+### 14:40 研究结论
+
+**截图状态**: ⚠️ 有新CI但未同步
+
+**检查结果**:
+- ✅ 截图文件存在且完整 (51KB PNG)
+- ✅ CI/CD workflow 运行正常 (5次连续成功)
+- ✅ 截图是CI占位图 (设计如此，非bug)
+- ✅ CI成功生成了新截图 (带新时间戳)
+- ❌ **CI sync job有bug，artifact未同步到git**
+- ⚠️ 本地截图仍是旧文件 (Feb 19 20:41)
+
+**与上次研究对比** (14:10 → 14:40):
+- 截图时间戳: 不变 (20:41 from Feb 19)
+- CI最新运行: ✅ 新CI #22214050530 (06:32, 约8小时前)
+- CI结果: 成功生成artifact，但sync失败
+- 结论: **发现CI sync bug!**
+
+### 🛠️ 解决方案
+
+**P0 - 修复CI Sync Bug (紧急)**:
+
+修改 `.github/workflows/ci.yml` 中的 sync job:
+
+```yaml
+- name: Commit Screenshot
+  run: |
+    git add screenshots/
+    # 修复: 使用 --cached 比较索引vs最新commit
+    if git diff --cached --quiet; then
+      echo "No changes to commit"
+    else
+      git commit -m "docs: Update game screenshot $(date '+%Y-%m-%d %H:%M')"
+      git push origin main
+      echo "✓ Screenshot synced to repository"
+    fi
+```
+
+**P1 - 跟踪所有截图文件**:
+
+```bash
+git add screenshots/*.png
+git commit -m "docs: Add all screenshot files"
+git push
+```
+
+**P1 - 替换为实际游戏截图 (长期)**:
+
+需要开发 Godot headless 截屏功能。
+
+### 建议优先级
+
+| 优先级 | 任务 | 状态 |
+|--------|------|------|
+| P0 | 修复CI sync job bug | 立即处理 |
+| P1 | 跟踪所有截图文件 | 后续处理 |
+| P1 | 添加Godot实际截图 | 长期任务 |
+| 当前 | 手动同步截图 | 临时方案 |
+
+---
+
+# Pinball CI/CD 截图状态报告
+
+> 更新日期: 2026-02-20 14:10 (Asia/Shanghai)
+> 调查者: Vanguard001 (Cron自动任务)
+
+---
+
+## 📊 14:10 研究更新
+
+### 状态检查
+
+| 项目 | 状态 | 详情 |
+|------|------|------|
+| **截图文件** | ✅ 存在 | latest_screenshot.png (51,542 bytes) |
+| **文件时间戳** | ⚠️ 17.5小时前 | 2026-02-19 20:41:55 |
+| **CI最新运行** | ✅ 成功 | Run #22180271100 @ 19:40 CST (约26.5小时前) |
+| **CI连续成功** | ✅ 5/5 | 最近5次运行全部成功 |
+| **截图内容** | ℹ️ 占位图 | ImageMagick生成，非实际游戏画面 |
+| **本地Git** | ⚠️ 1 commit ahead | 待推送 |
+
+### 本地仓库状态
+```
+## main...origin/main [ahead 1]
+```
+
+### 14:10 研究结论
+
+**截图状态**: ✅ 正常 - 无变化（距上次有效CI约26.5小时）
 
 **检查结果**:
 - ✅ 截图文件存在且完整 (51KB PNG)
 - ✅ CI/CD workflow 运行正常 (5次连续成功)
 - ✅ 截图是CI占位图 (设计如此，非bug)
 - ✅ 文档提交不触发CI (path filter正确配置)
-- ✅ 本地Git已同步
+- ✅ 本地Git ahead 1 commit (待推送)
 
-**与上次研究对比** (12:40 → 13:10):
+**与上次研究对比** (13:10 → 14:10):
 - 截图时间戳: 不变 (20:41)
 - CI最新运行: 不变 (#22180271100 @ 19:40)
-- 本地仓库: 已同步
+- 本地仓库: 新增待提交修改
 - 结论: 无新代码push，状态稳定
 
 **已知问题** (无变化):
