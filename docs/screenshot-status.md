@@ -1,6 +1,6 @@
 # Pinball CI/CD 截图状态报告
 
-> 更新日期: 2026-02-20 07:52 (Asia/Shanghai)
+> 更新日期: 2026-02-20 08:10 (Asia/Shanghai)
 > 调查者: Vanguard001 (Cron自动任务)
 
 ---
@@ -19,7 +19,125 @@
 
 ---
 
-## 🔄 07:52 研究更新 (2026-02-20)
+## 🔄 08:10 研究更新 (2026-02-20)
+
+### 深度CI分析结果
+
+**发现关键问题**: PI-PinBall (LuckyJunjie/pi-pin-ball) CI 持续失败!
+
+#### 两个项目的CI对比
+
+| 项目 | 仓库 | CI状态 | 工作流 |
+|------|------|--------|--------|
+| **pin-ball (维护项目)** | LuckyJunjie/pin-ball | ✅ 全部成功 | "Pinball Godot CI/CD - With Placeholder Screenshot" |
+| **pi-pin-ball (主项目)** | LuckyJunjie/pi-pin-ball | ❌ 全部失败 | ".github/workflows/ci.yml" |
+
+#### PI-PinBall CI 失败详情
+
+**失败的CI运行** (最近10次全部失败):
+```
+Run ID        | 时间       | 状态    | 提交信息
+22185646856  | 02-19 14:22 | ❌ 0s  | feat: Add Cheat Code System
+22185518483  | 02-19 14:19 | ❌ 0s  | feat: Add Game Mode Selection UI
+22185402325  | 02-19 14:16 | ❌ 0s  | feat: Add Statistics and Game Over UI
+22184374910  | 02-19 13:47 | ❌ 0s  | feat: Add Hint and Game Options systems
+22184334308  | 02-19 13:46 | ❌ 0s  | feat: Add Daily Challenge and Shop systems
+... (全部10+次运行均失败)
+```
+
+**关键特征**:
+- 所有失败运行耗时 **0秒**
+- 无 jobs 信息 (jobs_count: 0)
+- GitHub 提示: "This run likely failed because of a workflow file issue"
+
+### 根本原因分析
+
+#### 可能原因1: 私有仓库 GitHub Actions 限制
+- pi-pin-ball 是**私有仓库** (private repo)
+- GitHub Actions 在私有仓库可能有不同限制
+
+#### 可能原因2: Workflow 文件结构问题
+- pi-pin-ball 使用复杂的 job 依赖链:
+  ```
+  syntax-check → scene-check → game-tests → godot-validation → game-screenshot → download-sync
+  ```
+- 相比之下 pin-ball 使用更简单的结构
+
+#### 可能原因3: Workflow 配置差异
+
+**pin-ball (成功)**:
+```yaml
+name: Pinball Godot CI/CD - With Placeholder Screenshot
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+jobs:
+  syntax-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: GDScript Syntax Check
+        run: | ...
+```
+
+**pi-pin-ball (失败)**:
+```yaml
+name: PI-PinBall CI/CD
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+jobs:
+  syntax-check:
+    name: GDScript Syntax Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      ... (复杂依赖链)
+```
+
+### 08:10 研究结论
+
+**截图状态**: ✅ 正常工作 (针对 pin-ball)
+
+**PI-PinBall CI 问题**:
+| 项目 | 状态 | 说明 |
+|------|------|------|
+| **CI运行** | ❌ 全部失败 | 10+次运行, 0秒即失败 |
+| **失败原因** | ⚠️ 待确认 | 可能workflow语法或权限问题 |
+| **影响** | ⚠️ 高 | 无法自动验证代码和生成截图 |
+
+**建议解决方案**:
+
+1. **P0 - 紧急**: 修复 PI-PinBall CI workflow
+   - 简化 job 依赖结构
+   - 检查 workflow YAML 语法
+   - 验证 GitHub Actions 权限设置
+
+2. **P1**: 统一两个项目的 CI workflow
+   - 将成功的 pin-ball workflow 迁移到 pi-pin-ball
+   - 或修复现有 workflow 的问题
+
+3. **P2**: 增强截图同步机制
+   - 当前 artifact → 本地同步不完善
+   - 需要完善自动下载+commit+push
+
+---
+
+## 📊 当前截图状态 (上一版本)
+
+| 项目 | 状态 | 说明 |
+|------|------|------|
+| **截图文件** | ✅ 存在且有效 | latest_screenshot.png (51KB, 1920x1080, PNG) |
+| **文件时间戳** | ⚠️ 11小时前 | 2026-02-19 20:41 (约11小时前) |
+| **文件格式** | ✅ PNG有效 | 16-bit/color RGBA, non-interlaced |
+| **图片内容** | ⚠️ CI占位图 | ImageMagick 生成的占位图 (非实际游戏截图) |
+| **Git状态** | ✅ 已同步 | Branch up to date with origin/main |
+| **CI最近运行** | ✅ 成功 | Run #22180271100 @ 2026-02-19 11:40 (约20小时前) |
+| **CI历史** | ✅ 持续成功 | 最近5次运行全部成功 |
 
 ### 最新CI运行确认
 - Run ID: 22180271100
@@ -435,3 +553,31 @@ gh run list --repo LuckyJunjie/pin-ball --status success --limit 1 --json databa
 1. 确认是否有新的CI运行
 2. 检查游戏内截屏功能开发进度
 3. 验证CI自动同步功能实现
+
+---
+
+## 🔄 2026-02-20 08:40 研究更新
+
+### 状态检查
+
+| 项目 | 状态 | 详情 |
+|------|------|------|
+| **截图文件** | ✅ 存在 | latest_screenshot.png (51,542 bytes) |
+| **文件时间戳** | ⚠️ 12小时前 | 2026-02-19 20:41:55 |
+| **CI最新运行** | ✅ 成功 | Run #22180271100 @ 19:40 CST (13小时前) |
+| **CI连续成功** | ✅ 3/3 | 最近3次运行全部成功 |
+| **截图内容** | ℹ️ 占位图 | ImageMagick生成，非实际游戏画面 |
+
+### 研究结论
+
+**截图状态**: ✅ 正常 - 无变化（无新代码push，无新CI触发）
+
+**与上次研究对比** (23:10 → 08:40):
+- 截图时间戳: 不变 (20:41)
+- CI最新运行: 不变 (#22180271100)
+- 结论: 夜间无开发活动，一切正常
+
+**已知待改进项** (未变):
+- P1: 将占位图替换为Godot headless实际游戏截图
+- P1: 添加CI自动下载artifact+commit+push
+- 当前稳定，无需紧急干预
