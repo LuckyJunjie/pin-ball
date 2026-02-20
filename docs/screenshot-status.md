@@ -1,11 +1,11 @@
 # Pinball CI/CD 截图状态报告
 
-> 更新日期: 2026-02-20 23:10 (Asia/Shanghai)
+> 更新日期: 2026-02-21 00:40 (Asia/Shanghai)
 > 调查者: Vanguard001 (Cron自动任务)
 
 ---
 
-## 📊 23:10 研究更新 - CI机制已确认
+## 📊 00:40 研究更新 - CI机制确认
 
 ### 状态检查
 
@@ -13,7 +13,7 @@
 |------|------|------|
 | **screenshots目录** | ✅ 完整 | 5个PNG文件, 均为有效1920x1080 |
 | **pinball_01-04.png** | ✅ 实际游戏截图 | 各~541KB, Feb 20 14:45 |
-| **latest_screenshot.png** | ✅ 已同步 | 530KB, Feb 20 18:41 (约4.5小时前) |
+| **latest_screenshot.png** | ⚠️ 约6小时前更新 | 541KB, Feb 20 18:41 |
 | **CI placeholder大小** | ⚠️ ~51KB | 远小于实际截图(~541KB) |
 | **CI生成机制** | ⚠️ 仅ImageMagick | 未使用Godot headless捕获 |
 
@@ -25,49 +25,67 @@
 | pinball_02_game.png | Feb 20 14:45 | 541KB | ✅ 手动捕获 |
 | pinball_03_play.png | Feb 20 14:45 | 541KB | ✅ 手动捕获 |
 | pinball_04_launch.png | Feb 20 14:45 | 541KB | ✅ 手动捕获 |
-| **latest_screenshot.png** | **Feb 20 18:41** | **541KB** | ✅ **手动同步** |
+| **latest_screenshot.png** | **Feb 20 18:41** | **541KB** | ⚠️ **手动同步,距今约6小时** |
 | CI placeholder (参考) | - | ~51KB | ⚠️ ImageMagick生成 |
 
 ---
 
-## 🔍 发现的问题
+## 🔍 根本原因分析
 
-### 问题1: CI仅生成占位图 (根本原因确认)
-- **现状**: CI workflow 使用 ImageMagick 生成静态占位图 (~51KB)
-- **问题**: 未实际运行Godot游戏并捕获截图
-- **证据**: 
-  - CI生成图片: ~51KB (git show显示51,542 bytes)
-  - 实际游戏截图: ~541KB (541,699 bytes)
-  - 差异: 10倍大小差异，证明CI未捕获实际画面
-- **影响**: 无法自动获取真实游戏画面
-- **CI配置**: `game-screenshot` job 使用 convert 命令生成
+### 问题: CI仅生成占位图 (已确认)
 
-### 问题2: latest_screenshot.png 需手动同步
-- **现状**: 每次需要手动将游戏截图同步到 latest_screenshot.png
-- **问题**: 无自动化流程
-- **影响**: 维护成本高
+**CI配置分析** (`.github/workflows/ci.yml`):
+
+```yaml
+game-screenshot:
+  steps:
+    - name: Install ImageMagick
+      run: sudo apt-get install -y imagemagick
+    
+    - name: Generate Placeholder Screenshot
+      run: |
+        convert -size 1920x1080 xc:'#0a0a1a' \
+          -draw "rectangle 50,50 1870,1030" \
+          -pointsize 64 -annotate +0-120 "🎮 PINBALL GODOT" \
+          ...
+```
+
+**证据**:
+- CI生成图片: ~51KB (git show显示51,542 bytes)
+- 实际游戏截图: ~541KB (541,699 bytes)
+- 差异: **10倍大小差异**，证明CI未捕获实际画面
+
+**结论**: CI workflow **没有运行Godot**，只是用ImageMagick画了一个静态占位图
 
 ---
 
 ## 💡 解决方案
 
 ### 方案A: 改进CI捕获实际截图 (推荐 P1)
+
+需要在CI中添加Godot headless运行 + 截图捕获脚本:
+
 ```yaml
-# 在CI中添加Godot headless截图步骤
-- name: Run Godot and Capture Screenshot
+# 在CI中添加
+- name: Setup Godot
   run: |
-    # 下载Godot headless
     wget -q https://github.com/godotengine/godot/releases/download/4.5-stable/linux.x86_64.zip
     unzip -q linux.x86_64.zip
-    # 运行游戏并截屏（需项目有capture脚本）
-    ./godot4.5.linux.x86_64 --headless --script capture_screenshot.gd
+
+- name: Run Godot and Capture
+  run: |
+    # 需要项目中有 capture.gd 脚本
+    ./godot4.5.linux.x86_64 --headless --script capture.gd
 ```
 
-**前提条件**: 项目需包含 `capture_screenshot.gd` 脚本
+**前提条件**: 
+1. 项目需包含截图捕获脚本
+2. 项目结构支持headless运行
 
-### 方案B: 自动同步现有截图 (P2)
+### 方案B: 简化版 - 自动同步现有截图 (P2)
+
 ```yaml
-# 在download-sync步骤中添加
+# 在download-sync步骤中自动同步最新实际截图
 - name: Sync latest screenshot
   run: |
     # 复制最新的实际截图作为latest
@@ -88,16 +106,20 @@
 
 ## 研究结论
 
-**状态: ⚠️ 需要改进**
+**状态: ⚠️ 需要改进 (无新变化)**
 
 | 项目 | 状态 | 说明 |
 |------|------|------|
-| 截图文件 | ✅ 正常 | 5个PNG完整 |
-| CI运行 | ✅ 成功 | 最后运行14:32 |
-| CI截图机制 | ⚠️ 需改进 | 仅生成占位图 |
-| 自动同步 | ❌ 缺失 | 需手动同步 |
+| 截图文件 | ✅ 正常 | 5个PNG完整,最新为Feb 20 18:41 |
+| CI运行 | ✅ 成功 | workflow定义完整 |
+| CI截图机制 | ⚠️ 根本问题 | 仅用ImageMagick生成占位图(~51KB) |
+| 自动同步 | ❌ 缺失 | 需手动同步latest截图 |
 
-**结论: 截图文件本身正常，但CI自动化流程需要改进以自动捕获和同步游戏截图**
+**核心问题**: CI workflow使用ImageMagick静态生成占位图，未实际运行Godot捕获真实游戏画面
+
+**建议**: 
+1. **短期(P2)**: 在CI中添加自动同步现有截图到latest
+2. **长期(P1)**: 添加Godot headless运行 + 捕获脚本
 
 ---
 
@@ -105,8 +127,10 @@
 
 | 时间 | 状态 | 说明 |
 |------|------|------|
+| **00:40** | ⚠️ 需改进 | CI仅用ImageMagick生成占位图(~51KB)；距上次手动同步约6小时 |
+| **23:40** | ⚠️ 需改进 | CI仅用ImageMagick生成占位图(~51KB)；距上次手动同步(~530KB)约5小时 |
 | **23:10** | ⚠️ 需改进 | CI仅用ImageMagick生成占位图(~51KB)；距上次手动同步(~530KB)约4.5小时 |
-| 22:40 | ⚠️ 需改进 | 确认CI仅用ImageMagick生成占位图，未运行Godot捕获；距上次手动同步约4小时 |
+| **22:40** | ⚠️ 需改进 | 确认CI仅用ImageMagick生成占位图，未运行Godot捕获；距上次手动同步约4小时 |
 | 21:40 | ⚠️ 需改进 | 确认CI仅用ImageMagick生成占位图，未运行Godot捕获 |
 | 21:10 | ⚠️ 需改进 | 确认CI占位图(~51KB) vs 实际截图(~541KB)，10倍差异 |
 | 20:40 | ⚠️ 需改进 | CI仅生成占位图，无自动捕获实际游戏画面 |
