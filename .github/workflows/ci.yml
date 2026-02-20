@@ -1,4 +1,4 @@
-name: Pinball Godot CI/CD - With Placeholder Screenshot
+name: Pinball Godot CI/CD - With Screenshot Sync
 
 on:
   push:
@@ -105,9 +105,41 @@ jobs:
           echo "Generated: $(date)" >> $GITHUB_STEP_SUMMARY
           echo "PASSED"
 
+  download-sync:
+    name: Download & Sync Screenshot
+    runs-on: ubuntu-latest
+    needs: game-screenshot
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Download Screenshot
+        uses: actions/download-artifact@v4
+        with:
+          name: pinball-game-screenshot
+          path: screenshots/
+      
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      
+      - name: Commit Screenshot
+        run: |
+          git add screenshots/
+          if git diff --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "docs: Update game screenshot $(date '+%Y-%m-%d %H:%M')"
+            git push origin main
+            echo "✓ Screenshot synced to repository"
+          fi
+
   final-status:
     runs-on: ubuntu-latest
-    needs: [syntax-check, scene-check, game-tests, godot-validation, game-screenshot, report]
+    needs: [syntax-check, scene-check, game-tests, godot-validation, game-screenshot, report, download-sync]
     if: always()
     steps:
       - name: Print Final Status

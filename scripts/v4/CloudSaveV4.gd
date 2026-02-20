@@ -48,7 +48,7 @@ func upload_save(data: Dictionary) -> bool:
 	sync_started.emit()
 	
 	# Simulate upload
-	var success = _simulate_upload(data)
+	var success = await _simulate_upload(data)
 	
 	if success:
 		_cloud_data = data.duplicate()
@@ -76,7 +76,7 @@ func download_save() -> Dictionary:
 	_is_syncing = true
 	sync_started.emit()
 	
-	var success = _simulate_download()
+	var success = await _simulate_download()
 	
 	if success:
 		sync_completed.emit(true, "Download successful")
