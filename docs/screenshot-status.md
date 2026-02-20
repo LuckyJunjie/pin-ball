@@ -1,7 +1,71 @@
 # Pinball CI/CD 截图状态报告
 
-> 更新日期: 2026-02-20 12:40 (Asia/Shanghai)
+> 更新日期: 2026-02-20 13:10 (Asia/Shanghai)
 > 调查者: Vanguard001 (Cron自动任务)
+
+---
+
+## 📊 13:10 研究更新
+
+### 状态检查
+
+| 项目 | 状态 | 详情 |
+|------|------|------|
+| **截图文件** | ✅ 存在 | latest_screenshot.png (51,542 bytes) |
+| **文件时间戳** | ⚠️ 16.5小时前 | 2026-02-19 20:41:55 |
+| **CI最新运行** | ✅ 成功 | Run #22180271100 @ 19:40 CST (约17.5小时前) |
+| **CI连续成功** | ✅ 5/5 | 最近5次运行全部成功 |
+| **截图内容** | ℹ️ 占位图 | ImageMagick生成，非实际游戏画面 |
+| **本地Git** | ✅ 已同步 | 与 origin/main 同步 (12:40 docs commit已同步) |
+
+### CI触发规则分析
+
+**发现**: 文档提交不触发CI ✅ (设计如此)
+
+Workflow path filter配置:
+```yaml
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - '**.gd'       # Godot脚本
+      - '**.tscn'     # 场景文件
+      - '**.tres'     # 资源文件
+      - '**.cfg'      # 配置文件
+      - '.github/workflows/*.yml'
+```
+
+这意味着:
+- ❌ `docs: Update screenshot status` 不触发CI (正确)
+- ✅ 代码更改会触发CI (如 `fix: Add set_pressed method`)
+
+### 13:10 研究结论
+
+**截图状态**: ✅ 正常 - 无变化（距上次有效CI约17.5小时）
+
+**检查结果**:
+- ✅ 截图文件存在且完整 (51KB PNG)
+- ✅ CI/CD workflow 运行正常 (5次连续成功)
+- ✅ 截图是CI占位图 (设计如此，非bug)
+- ✅ 文档提交不触发CI (path filter正确配置)
+- ✅ 本地Git已同步
+
+**与上次研究对比** (12:40 → 13:10):
+- 截图时间戳: 不变 (20:41)
+- CI最新运行: 不变 (#22180271100 @ 19:40)
+- 本地仓库: 已同步
+- 结论: 无新代码push，状态稳定
+
+**已知问题** (无变化):
+1. pin-ball截图是ImageMagick占位图（非实际游戏画面）
+2. pi-pin-ball主项目CI全部失败（Workflow问题）
+3. 缺少CI自动同步机制（artifact→本地）
+
+**建议**:
+- P0: 修复 pi-pin-ball CI workflow（紧急）
+- P1: 将占位图替换为Godot headless实际游戏截图
+- P1: 添加CI自动下载artifact+commit+push
+- 当前稳定，无需紧急干预
 
 ---
 
