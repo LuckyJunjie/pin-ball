@@ -1,49 +1,46 @@
 # Pinball CI/CD 截图状态报告
 
-> 更新日期: 2026-02-20 20:10 (Asia/Shanghai)
+> 更新日期: 2026-02-20 21:40 (Asia/Shanghai)
 > 调查者: Vanguard001 (Cron自动任务)
 
 ---
 
-## 📊 20:10 研究更新 - 截图正常，CI需改进
+## 📊 21:40 研究更新 - CI占位图机制确认
 
 ### 状态检查
 
 | 项目 | 状态 | 详情 |
 |------|------|------|
-| **screenshots目录** | ✅ 完整 | 5个PNG文件 |
+| **screenshots目录** | ✅ 完整 | 5个PNG文件, 均为有效1920x1080 |
 | **pinball_01-04.png** | ✅ 实际游戏截图 | 各~541KB, Feb 20 14:45 |
-| **latest_screenshot.png** | ✅ 已同步 | 541KB, Feb 20 18:41 (约2小时前) |
-| **CI最新运行** | ✅ 成功 | Run #22214050530 @ 14:32 CST |
-| **CI截图机制** | ⚠️ 仅生成占位图 | 未捕获实际游戏画面 |
+| **latest_screenshot.png** | ✅ 已同步 | 541KB, Feb 20 18:41 (约2.5小时前) |
+| **CI placeholder大小** | ⚠️ ~51KB | 远小于实际截图(~541KB) |
+| **CI生成机制** | ⚠️ 仅ImageMagick | 未使用Godot headless捕获 |
 
 ### 文件状态
 
 | 文件 | 时间戳 | 大小 | 状态 |
 |------|--------|------|------|
-| pinball_01_menu.png | Feb 20 14:45 | 541KB | ✅ 手动添加 |
-| pinball_02_game.png | Feb 20 14:45 | 541KB | 手动添加 |
-| pinball_03_play.png | Feb 20 14:45 | 541KB | ✅ 手动添加 |
-| pinball_04_launch.png | Feb 20 14:45 | 541KB | ✅ 手动添加 |
+| pinball_01_menu.png | Feb 20 14:45 | 541KB | ✅ 手动捕获 |
+| pinball_02_game.png | Feb 20 14:45 | 541KB | ✅ 手动捕获 |
+| pinball_03_play.png | Feb 20 14:45 | 541KB | ✅ 手动捕获 |
+| pinball_04_launch.png | Feb 20 14:45 | 541KB | ✅ 手动捕获 |
 | **latest_screenshot.png** | **Feb 20 18:41** | **541KB** | ✅ **手动同步** |
+| CI placeholder (参考) | - | ~51KB | ⚠️ ImageMagick生成 |
 
 ---
 
 ## 🔍 发现的问题
 
-### 问题1: CI仅生成占位图
-- **现状**: CI workflow 使用 ImageMagick 生成静态占位图
+### 问题1: CI仅生成占位图 (根本原因确认)
+- **现状**: CI workflow 使用 ImageMagick 生成静态占位图 (~51KB)
 - **问题**: 未实际运行Godot游戏并捕获截图
+- **证据**: 
+  - CI生成图片: ~51KB (git show显示51,542 bytes)
+  - 实际游戏截图: ~541KB (541,699 bytes)
+  - 差异: 10倍大小差异，证明CI未捕获实际画面
 - **影响**: 无法自动获取真实游戏画面
-- **CI配置**: 见下方`game-screenshot` job
-
-```yaml
-# 当前CI使用ImageMagick生成占位图
-- name: Generate Placeholder Screenshot
-  run: |
-    mkdir -p screenshots
-    convert -size 1920x1080 xc:'#0a0a1a' -pointsize 48 ...
-```
+- **CI配置**: `game-screenshot` job 使用 convert 命令生成
 
 ### 问题2: latest_screenshot.png 需手动同步
 - **现状**: 每次需要手动将游戏截图同步到 latest_screenshot.png
@@ -108,6 +105,9 @@
 
 | 时间 | 状态 | 说明 |
 |------|------|------|
+| 21:40 | ⚠️ 需改进 | 确认CI仅用ImageMagick生成占位图，未运行Godot捕获 |
+| 21:10 | ⚠️ 需改进 | 确认CI占位图(~51KB) vs 实际截图(~541KB)，10倍差异 |
+| 20:40 | ⚠️ 需改进 | CI仅生成占位图，无自动捕获实际游戏画面 |
 | 20:10 | ⚠️ 需改进 | CI仅生成占位图 |
 | 19:40 | ⚠️ 需改进 | CI仅生成占位图 |
 | 19:10 | ✅ 正常 | 确认问题已修复 |
