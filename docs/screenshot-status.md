@@ -1,66 +1,70 @@
 # Pinball CI/CD 截图状态报告
 
-> 更新日期: 2026-02-21 13:40 (Asia/Shanghai)
+> 更新日期: 2026-02-21 14:10 (Asia/Shanghai)
 > 调查者: Vanguard001 (Cron自动任务)
 
 ---
 
-## 📊 12:40 研究更新 - 已触发CI
+## 📊 14:40 研究更新 - 问题持续
 
 ### 状态检查
 
 | 项目 | 状态 | 详情 |
 |------|------|------|
-| **screenshots目录** | ✅ 完整 | 5个PNG文件 |
-| **pinball_01-04.png** | ✅ 实际截图 | 各~529KB, Feb 20 14:45 |
-| **latest_screenshot.png** | ✅ 已同步(手动) | 530KB, Feb 21 11:11 |
-| **CI workflow** | 🔄 **已触发** | workflow_dispatch (12:41) |
+| **screenshots目录** | ✅ 完整 | 5个PNG文件,全部~541KB |
+| **pinball_01-04.png** | ✅ 实际截图 | 各541KB, Feb 20 14:45 |
+| **latest_screenshot.png** | ✅ 手动同步 | 541KB, Feb 21 11:11 |
+| **CI workflow** | ⚠️ 使用占位图 | ImageMagick生成静态图 |
 
-### CI运行状态
+### 截图时间戳确认
 
-| 项目 | 状态 |
-|------|------|
-| 最后自动push触发 | Feb 20 06:32 UTC (22+小时前) |
-| 最后手动触发 | 🔄 运行中 (12:41) |
-| 触发方式 | workflow_dispatch |
+```
+latest_screenshot.png    Feb 21 11:11 (541KB) - 手动同步
+pinball_01_menu.png      Feb 20 14:45 (541KB)
+pinball_02_game.png      Feb 20 14:45 (541KB)
+pinball_03_play.png      Feb 20 14:45 (541KB)
+pinball_04_launch.png    Feb 20 14:45 (541KB)
+```
 
-### 已确认问题
+### 核心问题 (未改变)
 
-1. **CI使用ImageMagick生成占位图** (~51KB) 而非实际游戏截图
-2. **CI未使用本地实际截图** (pinball_01-04.png 各~529KB)
-3. **无定时触发器** - 仅push或手动触发
-4. **latest_screenshot.png是手动同步的** (Feb 21 11:11)
-
-### 解决方案 (同上)
-
-| 优先级 | 任务 | 状态 |
-|--------|------|------|
-| **P1** | CI同步本地截图 | ⏳ 待实现 |
-| **P2** | schedule触发器 | ⏳ 待添加 |
-| **P0** | Godot headless | ⏳ 长期 |
-
-### CI Workflow 分析
-
-**当前CI配置** (已确认):
-- 使用ImageMagick生成静态占位图
+**CI Workflow 分析** (ci.yml):
+- `game-screenshot` job 使用 ImageMagick 生成占位图
 - 占位图: ~51KB (纯色背景+文字)
-- 实际游戏截图: ~541KB (Godot渲染)
-- 有`download-sync` job，但同步的是CI自己生成的占位图
+- `download-sync` job 同步的是CI自己生成的占位图
+- **本地实际截图(541KB)未被CI使用**
 
-### 问题1: CI未运行Godot Headless (根本原因)
+### 根本原因
 
-**根本原因分析:**
-- CI workflow使用 `convert` (ImageMagick) 生成静态占位图
-- 占位图大小: ~51KB (纯色背景+文字)
-- 实际游戏截图: ~530KB (Godot渲染)
-- `download-sync` job同步的是CI自己生成的占位图,不是本地真实截图
+```yaml
+# ci.yml 中的 game-screenshot job
+- name: Generate Placeholder Screenshot
+  run: |
+    convert -size 1920x1080 xc:'#0a0a1a' ...  # ImageMagick生成静态占位图
+```
 
-**解决方案:**
+### 解决方案 (优先级不变)
+
 | 优先级 | 任务 | 状态 | 方案 |
 |--------|------|------|------|
 | **P1** | CI同步本地截图 | ⏳ 待实现 | 修改download-sync job直接同步本地screenshots目录 |
-| **P2** | 添加schedule触发器 | ⏳ 待添加 | 每6小时触发一次CI |
-| **P0** | Godot headless截图 | 🔥 长期 | 需要runner支持或本地CI脚本 |
+| **P2** | schedule触发器 | ⏳ 待添加 | 每6小时触发一次CI |
+| **P0** | Godot headless截图 | ⏳ 长期 | 需要runner支持或本地CI脚本 |
+
+### 建议: 立即实现P1
+
+**步骤:**
+1. 修改ci.yml的`download-sync` job
+2. 直接复制本地截图而非下载artifact
+3. 添加schedule触发器
+
+**代码变更:**
+```yaml
+- name: Sync Local Screenshots
+  run: |
+    cp screenshots/pinball_01_menu.png screenshots/latest_screenshot.png
+    ls -lh screenshots/
+```
 
 ---
 
@@ -261,6 +265,7 @@ on:
 
 | 时间 | 状态 | 说明 |
 |------|------|------|
+| **14:10** | ⚠️ 需改进 | CI运行正常(success Feb 21 04:41)；本地截图正常(各541KB)；CI仍生成占位图；需手动同步 |
 | **13:40** | ⚠️ 需改进 | CI运行正常但生成占位图；本地有实际截图但需手动同步；建议实现本地cron自动截图 |
 | **13:10** | ⚠️ 需改进 | CI仅用ImageMagick生成占位图(~51KB)；本地有实际截图(541KB)但未同步；需实现本地截图同步 |
 | **12:10** | ⚠️ 需改进 | CI仅用ImageMagick生成占位图(~51KB)；本地有实际截图(541KB)但未同步；需实现本地截图同步 |
