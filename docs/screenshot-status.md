@@ -1,11 +1,11 @@
 # Pinball CI/CD 截图状态报告
 
-> 更新日期: 2026-02-21 14:10 (Asia/Shanghai)
+> 更新日期: 2026-02-21 15:10 (Asia/Shanghai)
 > 调查者: Vanguard001 (Cron自动任务)
 
 ---
 
-## 📊 14:40 研究更新 - 问题持续
+## 📊 15:10 研究更新 - 状态确认
 
 ### 状态检查
 
@@ -26,7 +26,51 @@ pinball_03_play.png      Feb 20 14:45 (541KB)
 pinball_04_launch.png    Feb 20 14:45 (541KB)
 ```
 
-### 核心问题 (未改变)
+### GitHub Actions CI 状态
+
+| 项目 | 状态 | 时间 |
+|------|------|------|
+| 最后运行 | ✅ success | Feb 21 04:41 UTC |
+| 触发方式 | workflow_dispatch | 手动触发 |
+| 前一次运行 | ✅ success | Feb 20 06:32 UTC |
+| 提交历史 | 66e9a04 | fix: Sync latest_screenshot.png |
+
+**Git提交记录:**
+```
+66e9a04 fix: Sync latest_screenshot.png with latest game capture
+c67a737 test: Add gameplay screenshots
+```
+
+### 文件验证
+
+```bash
+$ file screenshots/*.png
+screenshots/latest_screenshot.png:  PNG 1920x1080 8-bit RGBA
+screenshots/pinball_01_menu.png:   PNG 1920x1080 8-bit RGBA
+screenshots/pinball_02_game.png:   PNG 1920x1080 8-bit RGBA
+screenshots/pinball_03_play.png:   PNG 1920x1080 8-bit RGBA
+screenshots/pinball_04_launch.png: PNG 1920x1080 8-bit RGBA
+```
+
+**结论**: 所有文件均为实际游戏截图(1920x1080),非占位图
+
+### 工作原理分析
+
+1. **CI运行流程**:
+   - `game-screenshot`: 生成ImageMagick占位图(51KB) → 上传artifact
+   - `download-sync`: 下载artifact → 尝试commit到仓库
+
+2. **当前状态维持方式**:
+   - 手动同步实际截图(541KB) → 覆盖CI占位图
+   - CI每次运行会尝试覆盖,但手动同步会恢复
+
+3. **理想解决方案**:
+   - 修改CI直接使用本地实际截图
+   - 添加schedule触发器自动运行
+
+---
+
+## 核心问题 (未改变)
 
 **CI Workflow 分析** (ci.yml):
 - `game-screenshot` job 使用 ImageMagick 生成占位图
@@ -265,6 +309,7 @@ on:
 
 | 时间 | 状态 | 说明 |
 |------|------|------|
+| **15:10** | ⚠️ 需改进 | CI运行正常(success Feb 21 04:41)；确认所有文件为实际截图(1920x1080 541KB)；CI生成占位图但被手动同步覆盖 |
 | **14:10** | ⚠️ 需改进 | CI运行正常(success Feb 21 04:41)；本地截图正常(各541KB)；CI仍生成占位图；需手动同步 |
 | **13:40** | ⚠️ 需改进 | CI运行正常但生成占位图；本地有实际截图但需手动同步；建议实现本地cron自动截图 |
 | **13:10** | ⚠️ 需改进 | CI仅用ImageMagick生成占位图(~51KB)；本地有实际截图(541KB)但未同步；需实现本地截图同步 |
