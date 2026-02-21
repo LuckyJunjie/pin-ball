@@ -1,6 +1,6 @@
 # Pinball CI/CD 截图状态报告
 
-> 更新日期: 2026-02-21 00:40 (Asia/Shanghai)
+> 更新日期: 2026-02-21 08:53 (Asia/Shanghai)
 > 调查者: Vanguard001 (Cron自动任务)
 
 ---
@@ -13,7 +13,7 @@
 |------|------|------|
 | **screenshots目录** | ✅ 完整 | 5个PNG文件, 均为有效1920x1080 |
 | **pinball_01-04.png** | ✅ 实际游戏截图 | 各~541KB, Feb 20 14:45 |
-| **latest_screenshot.png** | ⚠️ 约6小时前更新 | 541KB, Feb 20 18:41 |
+| **latest_screenshot.png** | ⚠️ **约6.5小时前更新** | 541KB, Feb 20 18:41 |
 | **CI placeholder大小** | ⚠️ ~51KB | 远小于实际截图(~541KB) |
 | **CI生成机制** | ⚠️ 仅ImageMagick | 未使用Godot headless捕获 |
 
@@ -127,8 +127,9 @@ game-screenshot:
 
 | 时间 | 状态 | 说明 |
 |------|------|------|
-| **00:40** | ⚠️ 需改进 | CI仅用ImageMagick生成占位图(~51KB)；距上次手动同步约6小时 |
-| **23:40** | ⚠️ 需改进 | CI仅用ImageMagick生成占位图(~51KB)；距上次手动同步(~530KB)约5小时 |
+| **08:53** | ⚠️ 需改进 | CI仅用ImageMagick生成占位图(~51KB)；距上次手动同步latest(约14小时)；GitHub Actions运行正常(Feb 20 14:32 UTC) |
+| **01:10** | ⚠️ 需改进 | CI仅用ImageMagick生成占位图(~51KB)；距上次手动同步约6.5小时 |
+| **00:40** | ⚠️ 需改进 | CI仅用ImageMagick生成占位图(~51KB)；距上次手动同步(~530KB)约6小时 |
 | **23:10** | ⚠️ 需改进 | CI仅用ImageMagick生成占位图(~51KB)；距上次手动同步(~530KB)约4.5小时 |
 | **22:40** | ⚠️ 需改进 | 确认CI仅用ImageMagick生成占位图，未运行Godot捕获；距上次手动同步约4小时 |
 | 21:40 | ⚠️ 需改进 | 确认CI仅用ImageMagick生成占位图，未运行Godot捕获 |
