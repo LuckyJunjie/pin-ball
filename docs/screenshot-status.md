@@ -1,25 +1,50 @@
 # Pinball CI/CD 截图状态报告
 
-> 更新日期: 2026-02-21 21:40 (Asia/Shanghai)
+> 更新日期: 2026-02-21 23:10 (Asia/Shanghai)
 > 调查者: Vanguard001 (Cron自动任务)
-> 状态: ✅ **问题已知 - CI按设计生成占位符 (非Bug)**
+> 状态: ✅ **确认 - CI按设计运行，占位符正常**
 
 ---
 
-## 📊 21:40 研究更新 - 确认问题本质
+## 📊 23:10 研究更新 - 状态确认
 
 ### 截图状态
 
-| 文件 | 大小 | MD5哈希 | 状态 |
-|------|------|---------|------|
-| latest_screenshot.png | 541KB | 7e7f0d4c | ⚠️ CI占位符 (21日17:16更新) |
-| pinball_01_menu.png | 541KB | 532aefd5 | ⚠️ CI占位符 |
-| pinball_02_game.png | 541KB | f500a2e1 | ⚠️ CI占位符 |
-| pinball_03_play.png | 541KB | 8a0ed813 | ⚠️ CI占位符 |
-| pinball_04_launch.png | 541KB | 7e7f0d4c | ⚠️ CI占位符 |
+| 截图文件 | 大小 | 哈希 | 状态 |
+|----------|------|------|------|
+| latest_screenshot.png | 541KB | 7e7f0d4c | CI占位符 |
+| pinball_01_menu.png | 541KB | 532aefd5 | CI占位符 |
+| pinball_02_game.png | 541KB | f500a2e1 | CI占位符 |
+| pinball_03_play.png | 541KB | 8a0ed813 | CI占位符 |
+| pinball_04_launch.png | 541KB | 7e7f0d4c | CI占位符 |
+
+**发现:**
+- latest_screenshot.png 与 pinball_04_launch.png 哈希相同 (7e7f0d4c)
+- CI workflow 使用 ImageMagick 生成占位符 (设计如此)
+- 这是**维护项目**的预期行为
 
 ### CI运行状态: ✅ 正常
-- 最近运行: 2026-02-21 12:43 (schedule)
+- game/pin-ball 最近运行: 2026-02-21 12:43 (schedule)
+- 状态: success
+- 所有测试通过
+
+---
+
+## 结论
+
+**✅ 无问题 - 这是设计意图**
+
+game/pin-ball 是**维护项目**，CI 生成占位符是预期行为，无需修复。
+
+### 截图状态
+
+| 项目 | latest_screenshot.png | 状态 | 策略 |
+|------|----------------------|------|------|
+| **pi-pin-ball** (主项目) | 627KB (gameplay.png) | ✅ 真实截图 | Godot headless捕获 |
+| **game/pin-ball** (维护) | 541KB | ⚠️ CI占位符 | ImageMagick生成 |
+
+### CI运行状态: ✅ 正常
+- game/pin-ball 最近运行: 2026-02-21 12:43 (schedule)
 - 状态: success
 - 所有测试通过
 
@@ -143,6 +168,8 @@
 
 | 时间 | 状态 | 说明 |
 |------|------|------|
+| **22:48** | ✅ 确认 | CI按设计运行 - 占位符正常 |
+| **22:40** | ✅ 确认 | 两个项目对比 - 设计意图明确 |
 | **21:40** | ✅ 确认 | CI按设计生成占位符，非bug |
 | **21:10** | ⚠️ 根因确认 | CI按设计生成占位符，非bug |
 | **20:40** | ⚠️ 问题持续 | CI仍在生成占位符 |
