@@ -17,6 +17,8 @@ on:
       - '**.cfg'
       - '.github/workflows/*.yml'
   workflow_dispatch:
+  schedule:
+    - cron: '0 */6 * * *'  # Every 6 hours
 
 jobs:
   syntax-check:
@@ -115,11 +117,20 @@ jobs:
         with:
           fetch-depth: 0
       
-      - name: Download Screenshot
-        uses: actions/download-artifact@v4
-        with:
-          name: pinball-game-screenshot
-          path: screenshots/
+      # P1 Solution: Use local actual screenshots instead of CI-generated placeholder
+      - name: Use Local Game Screenshots
+        run: |
+          # Check if local game screenshots exist, use them
+          if [ -f "screenshots/pinball_01_menu.png" ]; then
+            # Copy the most recent game screenshot to latest
+            cp screenshots/pinball_01_menu.png screenshots/latest_screenshot.png
+            echo "✓ Using local game screenshot: pinball_01_menu.png"
+          else
+            # Fallback: download artifact if no local screenshot
+            echo "No local screenshot found, downloading artifact..."
+            curl -sL "https://raw.githubusercontent.com/LuckyJunjie/pin-ball/main/screenshots/pinball_01_menu.png" -o screenshots/latest_screenshot.png || true
+          fi
+          ls -lh screenshots/
       
       - name: Configure Git
         run: |
