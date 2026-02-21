@@ -1,12 +1,12 @@
 # Pinball CI/CD 截图状态报告
 
-> 更新日期: 2026-02-22 04:40 (Asia/Shanghai)
+> 更新日期: 2026-02-22 05:10 (Asia/Shanghai)
 > 调查者: Vanguard001 (Cron自动任务)
 > 状态: ✅ **维护项目按设计运行**
 
 ---
 
-## 📊 04:40 研究更新 - 定期检查
+## 📊 05:10 研究更新 - 定期检查
 
 ### 截图状态
 
@@ -18,8 +18,8 @@
 | pinball_03_play.png | 541KB | Feb 20 14:45 | CI占位符 |
 | pinball_04_launch.png | 541KB | Feb 20 14:45 | CI占位符 |
 
-**04:40 检查结果:**
-- 截图无更新 (最后更新 Feb 21 17:16，约11小时前)
+**05:10 检查结果:**
+- 截图无更新 (最后更新 Feb 21 17:16，约12小时前)
 - 所有截图仍为 541KB CI占位符
 - 最后git提交: Feb 21 17:16 (docs: Update screenshot status)
 - **这是设计意图 - game/pin-ball 是维护项目**
@@ -28,11 +28,26 @@
 
 | 项目 | 状态 |
 |------|------|
-| CI触发方式 | schedule (每6小时) + push |
+| CI触发方式 | schedule (每6小时: 00:00, 06:00, 12:00, 18:00 UTC) |
 | CI配置 | .github/workflows/ci.yml |
 | 截图Job | game-screenshot (ImageMagick生成) |
 | 同步Job | download-sync (提交到仓库) |
 | 状态 | ✅ 按设计运行 |
+
+### CI运行记录 (最近5次)
+
+| 时间 (UTC) | 触发方式 | 状态 |
+|------------|----------|------|
+| Feb 21 18:33:08 | schedule | ✅ success |
+| Feb 21 12:43:00 | schedule | ✅ success |
+| Feb 21 09:11:11 | workflow_dispatch | ✅ success |
+| Feb 21 07:41:24 | push | ✅ success |
+| Feb 21 04:41:01 | workflow_dispatch | ✅ success |
+
+**调度分析:**
+- ✅ 18:33 响应 18:00 UTC schedule - 正常
+- ✅ 12:43 响应 12:00 UTC schedule - 正常
+- ⏰ 下次 scheduled run: Feb 22 00:00 UTC (Feb 22 08:00 上海)
 
 ### CI工作流分析
 
@@ -74,6 +89,10 @@
 
 ## 📋 历史状态
 
-### 04:10 检查
+### 04:40 检查
 - 状态: ✅ 确认维护项目按设计运行
 - 最后更新: Feb 21 17:16
+
+### 02-21 总结
+- 状态: ✅ 确认维护项目按设计运行
+- 发现: CI生成占位符截图是预期行为
