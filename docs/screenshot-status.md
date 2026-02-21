@@ -1,20 +1,43 @@
 # Pinball CI/CD 截图状态报告
 
-> 更新日期: 2026-02-21 12:10 (Asia/Shanghai)
+> 更新日期: 2026-02-21 13:40 (Asia/Shanghai)
 > 调查者: Vanguard001 (Cron自动任务)
 
 ---
 
-## 📊 12:10 研究更新 - 深度分析
+## 📊 12:40 研究更新 - 已触发CI
 
 ### 状态检查
 
 | 项目 | 状态 | 详情 |
 |------|------|------|
 | **screenshots目录** | ✅ 完整 | 5个PNG文件 |
-| **pinball_01-04.png** | ⚠️ 约21.5小时前 | 各~541KB, Feb 20 14:45 |
-| **latest_screenshot.png** | ✅ 已同步 | 541KB, Feb 21 11:11 |
-| **CI workflow** | ⚠️ **根本问题** | 仅用ImageMagick生成占位图 |
+| **pinball_01-04.png** | ✅ 实际截图 | 各~529KB, Feb 20 14:45 |
+| **latest_screenshot.png** | ✅ 已同步(手动) | 530KB, Feb 21 11:11 |
+| **CI workflow** | 🔄 **已触发** | workflow_dispatch (12:41) |
+
+### CI运行状态
+
+| 项目 | 状态 |
+|------|------|
+| 最后自动push触发 | Feb 20 06:32 UTC (22+小时前) |
+| 最后手动触发 | 🔄 运行中 (12:41) |
+| 触发方式 | workflow_dispatch |
+
+### 已确认问题
+
+1. **CI使用ImageMagick生成占位图** (~51KB) 而非实际游戏截图
+2. **CI未使用本地实际截图** (pinball_01-04.png 各~529KB)
+3. **无定时触发器** - 仅push或手动触发
+4. **latest_screenshot.png是手动同步的** (Feb 21 11:11)
+
+### 解决方案 (同上)
+
+| 优先级 | 任务 | 状态 |
+|--------|------|------|
+| **P1** | CI同步本地截图 | ⏳ 待实现 |
+| **P2** | schedule触发器 | ⏳ 待添加 |
+| **P0** | Godot headless | ⏳ 长期 |
 
 ### CI Workflow 分析
 
@@ -25,6 +48,121 @@
 - 有`download-sync` job，但同步的是CI自己生成的占位图
 
 ### 问题1: CI未运行Godot Headless (根本原因)
+
+**根本原因分析:**
+- CI workflow使用 `convert` (ImageMagick) 生成静态占位图
+- 占位图大小: ~51KB (纯色背景+文字)
+- 实际游戏截图: ~530KB (Godot渲染)
+- `download-sync` job同步的是CI自己生成的占位图,不是本地真实截图
+
+**解决方案:**
+| 优先级 | 任务 | 状态 | 方案 |
+|--------|------|------|------|
+| **P1** | CI同步本地截图 | ⏳ 待实现 | 修改download-sync job直接同步本地screenshots目录 |
+| **P2** | 添加schedule触发器 | ⏳ 待添加 | 每6小时触发一次CI |
+| **P0** | Godot headless截图 | 🔥 长期 | 需要runner支持或本地CI脚本 |
+
+---
+
+## 📊 13:40 研究更新 - CI运行正常
+
+### 截图状态检查
+
+| 项目 | 状态 | 大小 | 日期 |
+|------|------|------|------|
+| **pinball_01_menu.png** | ✅ 实际截图 | 529KB | Feb 20 14:45 |
+| **pinball_02_game.png** | ✅ 实际截图 | 529KB | Feb 20 14:45 |
+| **pinball_03_play.png** | ✅ 实际截图 | 529KB | Feb 20 14:45 |
+| **pinball_04_launch.png** | ✅ 实际截图 | 530KB | Feb 20 14:45 |
+| **latest_screenshot.png** | ✅ 手动同步 | 530KB | Feb 21 11:11 |
+
+### GitHub Actions CI 运行状态
+
+| 项目 | 状态 | 时间 |
+|------|------|------|
+| 最后运行 | ✅ success | Feb 21 04:41 UTC |
+| 触发方式 | workflow_dispatch | 手动触发 |
+| 前一次运行 | ✅ success | Feb 20 06:32 UTC |
+
+**结论: CI运行正常,但使用ImageMagick生成占位图**
+
+### 根本原因确认
+
+**CI Workflow 分析:**
+```yaml
+# game-screenshot job
+- name: Generate Placeholder Screenshot
+  run: |
+    convert -size 1920x1080 xc:'#0a0a1a' ...  # ImageMagick生成静态图
+```
+
+**问题:**
+- CI在GitHub服务器运行,无法访问本地Godot项目
+- 使用ImageMagick生成约51KB占位图
+- 本地实际截图(~541KB)由手动Godot headless生成
+
+### 解决方案 (优先级不变)
+
+| 优先级 | 任务 | 状态 | 方案 |
+|--------|------|------|------|
+| **P1** | 本地定时截图+push | 🔄 方案确定 | 本地cron运行godot headless → 自动push |
+| **P2** | CI同步本地截图 | ⏸️ 不适用 | CI在GitHub运行,无法访问本地文件 |
+| **P0** | GitHub Actions Godot | ⏳ 研究中 | 使用godot-action在CI中运行headless |
+
+### 建议: 实现P1本地自动截图方案
+
+**步骤:**
+1. 下载Godot 4.x headless (Linux ARM64)
+2. 创建截图脚本 `capture.sh`
+3. 配置本地cron job每6小时运行
+4. 脚本自动push到GitHub
+
+**评估:** 这是目前最可行的方案,可实现自动化
+
+### 截图状态检查
+
+| 项目 | 状态 | 大小 | 日期 |
+|------|------|------|------|
+| **pinball_01_menu.png** | ✅ 实际截图 | 529KB | Feb 20 14:45 |
+| **pinball_02_game.png** | ✅ 实际截图 | 529KB | Feb 20 14:45 |
+| **pinball_03_play.png** | ✅ 实际截图 | 529KB | Feb 20 14:45 |
+| **pinball_04_launch.png** | ✅ 实际截图 | 530KB | Feb 20 14:45 |
+| **latest_screenshot.png** | ✅ 手动同步 | 530KB | Feb 21 11:11 |
+
+### 问题确认
+
+**CI生成的是占位图,不是真实游戏截图:**
+- CI使用ImageMagick生成约51KB的占位图
+- 本地实际游戏截图约530KB
+- CI不会运行Godot headless渲染
+
+### 根本原因
+
+```yaml
+# CI workflow中的game-screenshot job
+- name: Generate Placeholder Screenshot
+  run: |
+    convert -size 1920x1080 xc:'#0a0a1a' ...  # 生成静态占位图
+```
+
+**结论:** CI使用ImageMagick生成静态占位图 → 上传artifact → download-sync同步到仓库
+**本地截图:** 手动运行Godot headless生成 → 手动同步到仓库
+
+### 解决方案建议
+
+| 方案 | 描述 | 优先级 | 难度 |
+|------|------|--------|------|
+| **方案A: 本地CI脚本** | 本地运行Godot headless截图 → 自动push | P1 | 中 |
+| **方案B: 定时同步** | 本地cron job定期同步screenshots到GitHub | P1 | 低 |
+| **方案C: GitHub Actions Godot** | 使用godot-action运行headless (需要Linux runner支持) | P0 | 高 |
+
+### 下一步行动
+
+1. **短期(P1):** 创建本地截图脚本，定时运行Godot headless并push
+2. **中期(P2):** 添加GitHub Actions schedule触发器
+3. **长期(P0):** 研究在CI中运行Godot headless的可行性
+
+---
 
 **当前状态**:
 - CI使用`convert`(ImageMagick)生成静态占位图
@@ -123,6 +261,8 @@ on:
 
 | 时间 | 状态 | 说明 |
 |------|------|------|
+| **13:40** | ⚠️ 需改进 | CI运行正常但生成占位图；本地有实际截图但需手动同步；建议实现本地cron自动截图 |
+| **13:10** | ⚠️ 需改进 | CI仅用ImageMagick生成占位图(~51KB)；本地有实际截图(541KB)但未同步；需实现本地截图同步 |
 | **12:10** | ⚠️ 需改进 | CI仅用ImageMagick生成占位图(~51KB)；本地有实际截图(541KB)但未同步；需实现本地截图同步 |
 | **11:40** | ⚠️ 需改进 | CI仅用ImageMagick生成占位图(~51KB)；已手动同步latest(Feb 21 11:11)；需实现Godot headless |
 | **11:10** | ⚠️ 需改进 | CI仅用ImageMagick生成占位图(~51KB)；已手动同步latest(Feb 21 11:11) |
