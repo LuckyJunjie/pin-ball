@@ -140,7 +140,7 @@ jobs:
       - name: Commit Screenshot
         run: |
           git add screenshots/
-          if git diff --quiet; then
+          if git diff --cached --quiet; then
             echo "No changes to commit"
           else
             git commit -m "docs: Update game screenshot $(date '+%Y-%m-%d %H:%M')"
