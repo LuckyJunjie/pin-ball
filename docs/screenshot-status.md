@@ -1,16 +1,63 @@
 # 截图状态监控
 
-## 截图研究 2026-02-22 20:40
+## 截图研究 2026-02-22 22:10
 
 ### 截图状态检查
 
-| 截图文件 | 大小 | 修改时间 | 状态 |
-|----------|------|----------|------|
-| latest_screenshot.png | 541KB | Feb 22 11:42 | ⚠️ 9小时前 (最后同步) |
-| pinball_01_menu.png | 541KB | Feb 20 14:45 | ✅ 静态资源 |
-| pinball_02_game.png | 541KB | Feb 20 14:45 | ✅ 静态资源 |
-| pinball_03_play.png | 541KB | Feb 20 14:45 | ✅ 静态资源 |
-| pinball_04_launch.png | 541KB | Feb 20 14:45 | ✅ 静态资源 |
+| 截图文件 | MD5 | 大小 | 修改时间 | 状态 |
+|----------|-----|------|----------|------|
+| latest_screenshot.png | 532aefd5... | 541533 | Feb 22 11:42 | ✅ 正常 PNG 1920x1080 |
+| pinball_01_menu.png | 532aefd5... | 541533 | Feb 20 14:45 | ✅ 静态资源 |
+| pinball_02_game.png | f500a2e1... | 541556 | Feb 20 14:45 | ✅ 静态资源 |
+| pinball_03_play.png | 8a0ed813... | 541647 | Feb 20 14:45 | ✅ 静态资源 |
+| pinball_04_launch.png | 7e7f0d4c... | 541699 | Feb 20 14:45 | ✅ 静态资源 |
+
+### 截图状态分析
+
+**状态: ✅ 截图正常**
+
+| 检查项 | 结果 |
+|--------|------|
+| 文件格式 | ✅ 有效 PNG |
+| 分辨率 | ✅ 1920x1080 |
+| 文件大小 | ✅ 541KB (正常) |
+| 最新生成 | Feb 22 11:42 (约10小时前) |
+| MD5 对比 | latest == pinball_01_menu (CI 复制逻辑正常) |
+
+### 本地仓库状态
+
+| 状态 | 说明 |
+|------|------|
+| 本地分支 | main |
+| 领先 origin/main | 10 个提交 |
+| 待推送 | 是 (需要 git push) |
+
+### 结论
+
+**状态: ✅ 截图系统正常，本地需同步**
+
+| 检查项 | 状态 |
+|--------|------|
+| 截图文件有效 | ✅ |
+| 分辨率正确 | ✅ |
+| CI 逻辑正常 | ✅ (复制 pinball_01_menu.png) |
+| 本地同步 | ⚠️ 落后10个提交 |
+
+**总结: 截图功能正常。本地仓库有10个提交未推送到 GitHub，需要执行 `git push origin main` 来同步。**
+
+---
+
+## 截图研究 2026-02-22 21:40
+
+### 截图状态检查
+
+| 截图文件 | MD5 | 修改时间 | 状态 |
+|----------|-----|----------|------|
+| latest_screenshot.png | 532aefd5... | Feb 22 11:42 | ✅ 本地已更新 |
+| pinball_01_menu.png | 532aefd5... | Feb 20 14:45 | ✅ 静态资源 |
+| pinball_02_game.png | f500a2e1... | Feb 20 14:45 | ✅ 静态资源 |
+| pinball_03_play.png | 8a0ed813... | Feb 20 14:45 | ✅ 静态资源 |
+| pinball_04_launch.png | 7e7f0d4c... | Feb 20 14:45 | ✅ 静态资源 |
 
 ### CI/CD 运行状态分析
 
@@ -20,69 +67,46 @@
 |------|------|
 | 调度规则 | `0 */6 * * *` (每6小时, UTC 0分) |
 | 上海时间对应 | 08:00, 14:00, 20:00, 02:00 |
-| 最后运行 | Feb 22 14:44 上海 (06:44 UTC) |
-| 当前时间 | Feb 22 20:40 上海 (12:40 UTC) |
-| 预期运行 | 20:00 上海 (12:00 UTC) - **尚未触发** |
-| 触发方式 | schedule (每6小时) + push + workflow_dispatch |
+| 最后运行 | Feb 22 20:46 上海 (12:46 UTC) ✅ success |
+| 运行状态 | 正常运行 |
+| 最后5次运行 | 全部 success ✅ |
 
-### 🔍 发现的问题
+### 🔍 研究发现
 
-#### 问题1: 12:00 UTC 调度未触发 (P1)
-- **现象**: 当前时间 20:40 上海，12:00 UTC (20:00 上海) 的调度尚未运行
-- **历史对比**: 
-  - 06:00 UTC 调度延迟 44分钟 (06:44 UTC执行)
-  - 12:00 UTC 调度已延迟 >40分钟
-- **原因**: GitHub Actions 公共免费层队列积压
-- **影响**: 中 - 延迟同步但不影响核心功能
+#### 发现1: CI 正常运行 (✅)
+- 最新运行: 22277421091 - **success** (1m6s)
+- 所有历史运行均为 success
+- 定时调度和工作流触发都正常
 
-#### 问题2: 截图"无变化" (设计行为，非bug)
-- **现象**: latest_screenshot.png 始终是 pinball_01_menu.png
-- **原因**: CI 设计就是复制 pinball_01_menu.png 作为 latest_screenshot.png
-- **代码逻辑**:
-  ```yaml
-  - name: Use Local Game Screenshots
-    run: |
-      if [ -f "screenshots/pinball_01_menu.png" ]; then
-        cp screenshots/pinball_01_menu.png screenshots/latest_screenshot.png
-      fi
-  ```
-- **影响**: 无 - 这是预期行为
+#### 发现2: 本地仓库未同步 (⚠️)
+- **现象**: 本地分支领先 origin/main 10 个提交
+- **原因**: 本地提交未推送到 GitHub
+- **影响**: latest_screenshot.png 在本地已更新，但未同步到远程
 
-### 解决方案建议
+#### 发现3: 截图逻辑正常
+- CI 设计: 从本地复制 pinball_01_menu.png 到 latest_screenshot.png
+- 这是预期行为，不是 bug
 
-#### 优先级 P1
+### 解决方案
 
-1. **手动触发 CI**
-   - 访问: https://github.com/LuckyJunjie/pinball/actions
-   - 点击 "Pinball Godot CI/CD - With Screenshot Sync"
-   - 点击 "Run workflow" → "Run workflow"
-   - 强制同步最新截图
+#### 解决方案: 推送本地提交到 GitHub
 
-2. **等待自动队列**
-   - GitHub Actions 会自动重试队列中的任务
-   - 预计 12:40-13:00 UTC 之间会执行
+```bash
+cd ~/game/pin-ball
+git push origin main
+```
 
-#### 优先级 P2 (可选优化)
-
-1. **调度频率调整**
-   - 当前: 每6小时
-   - 可改为: 每3小时 `0 */3 * * *`
-   - 减少单次队列等待时间
-
-2. **增加 workflow_dispatch 可见性**
-   - 文档中强调可手动触达
-   - 作为备用同步方案
+**优先级: P1** - 需要手动同步
 
 ### 结论
 
-**状态: ⚠️ 需关注 (非紧急)**
+**状态: ✅ CI 正常，需要同步本地提交**
 
 | 检查项 | 状态 |
 |--------|------|
 | CI 工作流配置正常 | ✅ |
-| 截图同步步骤正常 | ✅ |
-| 所有截图文件完整 | ✅ 5/5 |
-| 12:00 UTC 调度延迟 | ⚠️ 需观察 |
-| 可手动触发作为备用 | ✅ |
+| CI 运行全部成功 | ✅ 5/5 |
+| 截图逻辑正常 | ✅ |
+| 本地与远程同步 | ⚠️ 落后10个提交 |
 
-**建议: 手动触发一次 workflow_dispatch 或等待队列自动执行**
+**总结: CI/CD 工作正常。本地仓库有10个提交未推送到 GitHub，需要执行 `git push origin main` 来同步。**
