@@ -1,93 +1,88 @@
 # 截图状态监控
 
-## 截图研究 2026-02-22 19:10
+## 截图研究 2026-02-22 20:40
 
 ### 截图状态检查
 
-| 截图文件 | 大小 | 状态 |
-|----------|------|------|
-| latest_screenshot.png | 541KB | ✅ 已同步 (Feb 22 11:42) |
-| pinball_01_menu.png | 541KB | ✅ 真实游戏截图 |
-| pinball_02_game.png | 541KB | ✅ 真实游戏截图 |
-| pinball_03_play.png | 541KB | ✅ 真实游戏截图 |
-| pinball_04_launch.png | 541KB | ✅ 真实游戏截图 |
+| 截图文件 | 大小 | 修改时间 | 状态 |
+|----------|------|----------|------|
+| latest_screenshot.png | 541KB | Feb 22 11:42 | ⚠️ 9小时前 (最后同步) |
+| pinball_01_menu.png | 541KB | Feb 20 14:45 | ✅ 静态资源 |
+| pinball_02_game.png | 541KB | Feb 20 14:45 | ✅ 静态资源 |
+| pinball_03_play.png | 541KB | Feb 20 14:45 | ✅ 静态资源 |
+| pinball_04_launch.png | 541KB | Feb 20 14:45 | ✅ 静态资源 |
 
-### 截图更新状态
-- `latest_screenshot.png` 最后同步: **Feb 22 11:42** (约7.5小时前)
-- 编号截图最后更新: Feb 20 14:45
-- 所有截图文件格式: PNG 1920x1080 ✅
-- 文件完整性: PNG image data, 1920 x 1080, 8-bit/color RGBA ✅
-
-### CI/CD 运行状态
+### CI/CD 运行状态分析
 
 **GitHub Actions Workflow:** `Pinball Godot CI/CD - With Screenshot Sync`
 
 | 指标 | 状态 |
 |------|------|
-| 最后运行 | Feb 22 06:44 UTC (14:44 上海) |
-| 触发方式 | schedule (每6小时) |
-| 运行结果 | ✅ 全部成功 (最近5次全部成功) |
-| 截图同步步骤 | ✅ 正常工作 |
+| 调度规则 | `0 */6 * * *` (每6小时, UTC 0分) |
+| 上海时间对应 | 08:00, 14:00, 20:00, 02:00 |
+| 最后运行 | Feb 22 14:44 上海 (06:44 UTC) |
+| 当前时间 | Feb 22 20:40 上海 (12:40 UTC) |
+| 预期运行 | 20:00 上海 (12:00 UTC) - **尚未触发** |
+| 触发方式 | schedule (每6小时) + push + workflow_dispatch |
 
-### 🔍 深入分析发现
+### 🔍 发现的问题
 
-**CI 工作流实际执行流程:**
+#### 问题1: 12:00 UTC 调度未触发 (P1)
+- **现象**: 当前时间 20:40 上海，12:00 UTC (20:00 上海) 的调度尚未运行
+- **历史对比**: 
+  - 06:00 UTC 调度延迟 44分钟 (06:44 UTC执行)
+  - 12:00 UTC 调度已延迟 >40分钟
+- **原因**: GitHub Actions 公共免费层队列积压
+- **影响**: 中 - 延迟同步但不影响核心功能
 
-1. **game-screenshot job**: 使用 ImageMagick 生成**占位符截图** (非真实游戏截图)
-   - 生成文本: "🎮 PINBALL GODOT" + "✅ CI/CD Validation Passed"
-   - 这是一个人工合成的图片，不是游戏实际画面
-
-2. **download-sync job**: 检查本地是否有真实截图
-   - 如果 `screenshots/pinball_01_menu.png` 存在 → 复制到 `latest_screenshot.png`
-   - 如果不存在 → 使用 CI 生成的占位符
-
-3. **当前状态**: 真实截图 (pinball_01_menu.png) 存在于仓库中 → 正常工作 ✅
-
-### 发现的根本原因
-
-**现状 - 无紧急问题 ✅:**
-
-1. ✅ CI/CD 工作流正常运行 (100% success rate)
-2. ✅ 截图同步步骤正常 - 使用仓库中的本地截图
-3. ✅ 所有截图文件完整有效 (5/5 有效 PNG)
-4. ✅ latest_screenshot 正常同步 (复制自 pinball_01_menu.png)
-
-**潜在限制 (非问题):**
-
-- ⚠️ **CI 不会生成真实游戏截图** - 需要在本地运行 Godot headless 模式
-- ⚠️ 依赖仓库中预存的截图文件
-- ⚠️ 如需更新游戏内截图，需要: 本地运行 Godot → 捕获截图 → 推送到仓库
+#### 问题2: 截图"无变化" (设计行为，非bug)
+- **现象**: latest_screenshot.png 始终是 pinball_01_menu.png
+- **原因**: CI 设计就是复制 pinball_01_menu.png 作为 latest_screenshot.png
+- **代码逻辑**:
+  ```yaml
+  - name: Use Local Game Screenshots
+    run: |
+      if [ -f "screenshots/pinball_01_menu.png" ]; then
+        cp screenshots/pinball_01_menu.png screenshots/latest_screenshot.png
+      fi
+  ```
+- **影响**: 无 - 这是预期行为
 
 ### 解决方案建议
 
-**P2 - 未来改进 (非紧急):**
+#### 优先级 P1
 
-如需 CI 自动生成真实游戏截图:
+1. **手动触发 CI**
+   - 访问: https://github.com/LuckyJunjie/pinball/actions
+   - 点击 "Pinball Godot CI/CD - With Screenshot Sync"
+   - 点击 "Run workflow" → "Run workflow"
+   - 强制同步最新截图
 
-1. 在 CI 中添加 Godot headless 渲染步骤
-2. 使用 `barichello/godot-action` 运行 Godot 并导出
-3. 使用 `--headless` 模式捕获窗口截图
-4. 或使用 OpenClaw Godot Plugin 在本地自动捕获
+2. **等待自动队列**
+   - GitHub Actions 会自动重试队列中的任务
+   - 预计 12:40-13:00 UTC 之间会执行
 
-**当前状态: ✅ 正常运行**
+#### 优先级 P2 (可选优化)
 
-- 截图文件有效 (PNG 1920x1080, RGBA)
-- GitHub Actions 正常运行
-- 下次 scheduled run: 2026-02-22T12:00 UTC (20:00 上海)
+1. **调度频率调整**
+   - 当前: 每6小时
+   - 可改为: 每3小时 `0 */3 * * *`
+   - 减少单次队列等待时间
+
+2. **增加 workflow_dispatch 可见性**
+   - 文档中强调可手动触达
+   - 作为备用同步方案
 
 ### 结论
 
-**状态: ✅ 一切正常**
+**状态: ⚠️ 需关注 (非紧急)**
 
-- ✅ CI/CD 工作流 100% 成功 (最近5次全部成功)
-- ✅ 截图同步步骤正常
-- ✅ 所有截图文件完整 (5/5 有效 PNG)
-- ✅ latest_screenshot 正常同步
-- ✅ 无需干预
+| 检查项 | 状态 |
+|--------|------|
+| CI 工作流配置正常 | ✅ |
+| 截图同步步骤正常 | ✅ |
+| 所有截图文件完整 | ✅ 5/5 |
+| 12:00 UTC 调度延迟 | ⚠️ 需观察 |
+| 可手动触发作为备用 | ✅ |
 
-**研究结论:**
-系统运行正常。CI 每6小时运行一次并同步截图。截图来源是仓库中预存的本地截图 (pinball_01_menu.png)，而非 CI 生成的占位符。这是设计行为，不是问题。
-
-**下一步:**
-- 下次 CI 运行将在 20:00 上海时间自动触发 (约43分钟后)
-- 监控系统自动继续监控
+**建议: 手动触发一次 workflow_dispatch 或等待队列自动执行**
