@@ -1,100 +1,81 @@
-# 截图研究 2026-02-24 03:10 CST
+# 截图研究 2026-02-24 06:10 CST
 
-## 🔴 问题确认 - Cron 调度持续失败
+## 🔍 深度分析结果
+
+### 1. 截图状态检查
 
 | 检查项 | 状态 | 详情 |
 |--------|------|------|
-| 本地HEAD vs GitHub | ✅ 同步 | f96edd0 |
-| latest_screenshot.png | ✅ 正常 | Feb 23 00:45 CST, 541KB PNG |
-| CI workflow cron | ✅ 正确 | `0 0,6,12,18 * * *` (UTC) |
-| 最后push触发 | ✅ success | Feb 23 17:42 UTC |
-| 定时触发 (18:00 UTC) | ❌ **未触发** | Feb 23 18:00 UTC 缺失 |
-| 定时触发 (00:00 UTC) | ⏳ 待验证 | 08:00 CST 尚未到来 |
-| 当前时间 | - | Feb 24 03:10 CST = Feb 23 19:10 UTC |
+| 本地截图 | ⚠️ 静态 | latest 与 pinball_01 MD5 相同 (532aefd5) |
+| CI Schedule | ⚠️ 运行但时间偏移 | 实际: 19:13 UTC |
+| Git 提交 | ❌ 无变化 | 文件相同，无法触发提交 |
+| CI 运行 | ✅ 正常 | 最近一次 Feb 23 19:46 success |
 
-## 🔍 问题分析
+### 2. MD5 校验结果
 
-### 1. CI 运行历史 (最近)
+```
+532aefd5cc8604ba6efe324ce919e973  latest_screenshot.png   ← Feb 23 00:45
+532aefd5cc8604ba6efe324ce919e973  pinball_01_menu.png     ← Feb 20 14:45 (完全相同!)
+f500a2e11bf3180515b5dea7cf8298f8  pinball_02_game.png
+8a0ed813cc94b89b09044c361a4d1245  pinball_03_play.png
+7e7f0d4c6731709809384bb8cba9fea9  pinball_04_launch.png
+```
 
-| 时间 (UTC) | CST 时间 | 触发方式 | 状态 | 备注 |
-|------------|----------|----------|------|------|
-| Feb 23 17:42 | Feb 24 01:42 | push | ✅ success | 修复 cron 的提交 |
-| Feb 23 16:41 | Feb 24 00:41 | workflow_dispatch | ✅ success | 手动触发 |
-| Feb 23 13:00 | Feb 23 21:00 | schedule | ✅ success | 12:00 UTC ✅ |
-| Feb 23 07:02 | Feb 23 15:02 | schedule | ✅ success | 06:00 UTC ✅ |
-| Feb 23 02:02 | Feb 23 10:02 | schedule | ✅ success | 00:00 UTC ✅ |
-| Feb 23 18:00 | Feb 24 02:00 | schedule | ❌ **缺失** | 应该是 18:00 UTC |
-| Feb 24 00:00 | Feb 24 08:00 | schedule | ⏳ 未到 | 尚未到达 |
+### 3. 根本原因 ⚠️
 
-### 2. 根本原因分析
+**问题**: CI 根本没有生成真正的游戏截图！
 
-**问题:** 定时任务 `0 0,6,12,18 * * *` 的 18:00 UTC 触发器没有运行
+```yaml
+# CI workflow: game-screenshot job
+- name: Generate Placeholder Screenshot
+  run: |
+    # 使用 ImageMagick 生成占位图，不是 Godot 渲染！
+    convert -size 1920x1080 xc:'#0a0a1a' -draw "rectangle..." ...
+```
 
-**可能原因:**
-1. **GitHub Actions cron 调度缓存** - Cron 表达式修改后需要时间传播
-2. **GitHub Actions 服务端限制** - 免费账户可能有调度限制
-3. **工作流文件缓存** - GitHub 可能在缓存旧版本的 cron
+**执行流程**:
+1. `game-screenshot` → 使用 ImageMagick 生成静态占位图 (伪截图)
+2. `download-sync` → 复制本地 `pinball_01_menu.png` → `latest_screenshot.png`
+3. 两个文件 MD5 相同 → `git diff --cached --quiet` 为真 → 跳过提交
+4. **结果**: 截图从未真正更新
 
-### 3. 截图状态
+### 4. CI 运行记录
 
-| 文件 | 大小 | 修改时间 (CST) | 状态 |
-|------|------|----------------|------|
-| latest_screenshot.png | 541533 | Feb 23 00:45 | ✅ 正常 |
-| pinball_01_menu.png | 541533 | Feb 20 14:45 | ✅ 存档 |
-| pinball_02_game.png | 541556 | Feb 20 14:45 | ✅ 存档 |
-| pinball_03_play.png | 541647 | Feb 20 14:45 | ✅ 存档 |
-| pinball_04_launch.png | 541699 | Feb 20 14:45 | ✅ 存档 |
+| Run | 触发方式 | 时间 (UTC) | 状态 |
+|-----|----------|------------|------|
+| #73 | workflow_dispatch | Feb 23 19:46:01Z | ✅ success |
+| #72 | schedule | Feb 23 19:13:17Z | ✅ success |
+| #71 | push | Feb 23 17:42:42Z | ✅ success |
 
-## ✅ 解决方案
+**注意**: Schedule 时间与 cron `0 0,6,12,18 * * *` 不匹配
 
-### 已验证有效
-- [x] CI workflow 文件正确 (`0 0,6,12,18 * * *`)
-- [x] Push 触发 CI 成功
-- [x] 手动 workflow_dispatch 触发成功
+### 5. 解决方案
 
-### 待执行方案
-- [ ] **方案A**: 等待 00:00 UTC (08:00 CST) 定时触发 - 验证 cron 是否恢复
-- [ ] **方案B**: 如果 00:00 UTC 未触发，手动 workflow_dispatch 一次
-- [ ] **方案C**: 考虑使用外部定时服务触发 GitHub API
+| 方案 | 说明 | 优先级 | 工作量 |
+|------|------|--------|--------|
+| **接受现状** | CI 只做代码验证，截图是本地静态档案 | P0 | 无 |
+| **Godot Headless** | 真正运行 Godot 捕获截图 | P1 | 中等 |
+| **强制提交** | 即使无变化也强制提交 | P2 | 低 (不推荐) |
 
-### 高级方案 (如果问题持续)
-1. **使用 GitHub API 定时触发**: 通过 cron job 调用 GitHub API 触发 workflow
-2. **修改 cron 频率**: 改为每4小时一次增加触发机会
-3. **依赖 push 触发**: 主要依靠 push 事件，定时作为备份
+### 6. 结论
 
-## 📅 验证时间线
+⚠️ **当前截图功能是"假象"**:
+- ✅ CI 代码验证正常
+- ✅ Schedule 触发正常
+- ❌ 截图不是游戏实际画面
 
-| UTC 时间 | CST 时间 | 预期 | 实际 | 状态 |
-|----------|----------|------|------|------|
-| Feb 23 00:00 | Feb 23 08:00 | ✅ | ✅ | 已验证 |
-| Feb 23 06:00 | Feb 23 14:00 | ✅ | ✅ | 已验证 |
-| Feb 23 12:00 | Feb 23 20:00 | ✅ | ✅ | 已验证 |
-| Feb 23 18:00 | Feb 24 02:00 | ✅ | ❌ | **缺失** |
-| Feb 24 00:00 | Feb 24 08:00 | ✅ | ⏳ | 待验证 |
-| Feb 24 06:00 | Feb 24 14:00 | ✅ | ⏳ | 待验证 |
-
-## 📊 影响评估
-
-- **影响范围**: 仅自动截图同步
-- **影响频率**: 每天可能丢失 1-2 次截图
-- **业务影响**: 轻微 - 不影响游戏开发
-- **用户体验**: 中等 - 截图可能不是最新
-
-## 🔧 下一步行动
-
-1. **立即**: 等待 Feb 24 00:00 UTC (08:00 CST) 验证 cron 是否恢复
-2. **如果失败**: 手动 workflow_dispatch 触发一次
-3. **如果持续失败**: 考虑外部触发方案
-
-## 总结
-
-**当前状态:** Cron 调度部分失败 - 18:00 UTC 定时任务未触发  
-**根本原因:** GitHub Actions cron 调度缓存/限制  
-**影响:** 轻微 - 每天可能丢失 1 次自动截图  
-**下一步:** 等待 00:00 UTC 验证或手动触发
+**如果需要真实游戏截图**: 需要实现 Godot headless 渲染
+**如果只做 CI 验证**: 当前状态可接受
 
 ---
 
-**更新记录:**
-- 2026-02-24 03:10 CST: 确认 18:00 UTC 缺失，等待 00:00 UTC 验证
-- 2026-02-24 02:40 CST: 初次发现 18:00 UTC 未触发
+## 更新记录
+
+- 2026-02-24 07:10 CST: 再次确认 - 截图状态无变化，CI 最后运行 Feb 23 22:00:03Z (workflow_dispatch)
+- 2026-02-24 06:10 CST: 再次确认 MD5 - 截图状态无变化 (532aefd5)
+- 2026-02-24 05:40 CST: 确认 MD5 校验，最新截图与 pinball_01 完全相同
+- 2026-02-24 05:10 CST: 发现根因 - CI 用 ImageMagick 生成占位图，非真实游戏截图
+- 2026-02-24 04:40 CST: 确认 CI 正常运行
+- 2026-02-24 04:10 CST: 深度分析 - 发现截图静态是设计行为
+- 2026-02-24 03:40 CST: 配置本地 crontab 外部触发
+- 2026-02-24 03:40 CST: 确认 GitHub Actions schedule 完全失效
