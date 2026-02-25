@@ -1,4 +1,4 @@
-# 截图状态研究 2026-02-25 11:40 CST
+# 截图状态研究 2026-02-25 12:10 CST
 
 ## 1. 截图状态检查 ✅
 
@@ -31,8 +31,8 @@
 | Feb 25 02:43 | Feb 25 10:43 | schedule | ✅ success | 3m53s |
 | Feb 24 19:11 | Feb 25 03:11 | schedule | ✅ success | 1m13s |
 | Feb 24 13:21 | Feb 24 21:21 | schedule | ✅ success | 1m03s |
-| Feb 24 10:00 | Feb 24 18:00 | schedule | ✅ success | - |
-| Feb 24 07:09 | Feb 24 15:09 | schedule | ✅ success | - |
+| Feb 24 10:00 | Feb 24 18:00 | workflow_dispatch | ✅ success | 1m11s |
+| Feb 24 07:09 | Feb 24 15:09 | schedule | ✅ success | 1m12s |
 
 ### CI 工作流分析
 - **调度**: 每天 schedule 触发 (约每隔6-8小时)
@@ -87,5 +87,5 @@
 建议: 每日CI运行正常，如需更频繁检查可调整cron schedule
 
 ---
-*检查时间: 2026-02-25 11:40 CST*
+*检查时间: 2026-02-25 12:10 CST*
 *检查结果: ✅ 一切正常*
