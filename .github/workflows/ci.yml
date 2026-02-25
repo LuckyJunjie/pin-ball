@@ -118,13 +118,18 @@ jobs:
           fetch-depth: 0
       
       # P1 Solution: Use local actual screenshots instead of CI-generated placeholder
+      # Fixed: Use the most recently modified screenshot instead of hardcoded file
       - name: Use Local Game Screenshots
         run: |
-          # Check if local game screenshots exist, use them
-          if [ -f "screenshots/pinball_01_menu.png" ]; then
-            # Copy the most recent game screenshot to latest
+          # Find the most recently modified screenshot file (excluding itself)
+          if ls screenshots/pinball_*.png 1> /dev/null 2>&1; then
+            latest=$(ls -t screenshots/pinball_*.png | head -1)
+            cp "$latest" screenshots/latest_screenshot.png
+            echo "✓ Using latest screenshot: $latest"
+          elif [ -f "screenshots/pinball_01_menu.png" ]; then
+            # Fallback: use pinball_01_menu.png
             cp screenshots/pinball_01_menu.png screenshots/latest_screenshot.png
-            echo "✓ Using local game screenshot: pinball_01_menu.png"
+            echo "✓ Using fallback screenshot: pinball_01_menu.png"
           else
             # Fallback: download artifact if no local screenshot
             echo "No local screenshot found, downloading artifact..."
