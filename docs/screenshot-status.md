@@ -16,7 +16,7 @@
 -rw-r--r-- 1 pi pi 408630 Feb 25 06:41 pinball_01_menu.png    ✅ 正常
 -rw-r--r-- 1 pi pi 385949 Feb 25 06:41 pinball_02_game.png     ✅ 正常
 -rw-r--r-- 1 pi pi 405713 Feb 25 06:41 pinball_03_play.png      ✅ 正常
--rw-r--r-- 1 pi pi 541699 Feb 20 14:45 pinball_04_launch.png    ⚠️ 过期!
+-rw-r--r-- 1 pi pi 438842 Feb 25 08:41 pinball_04_launch.png    ✅ 已修复 (从pi-pin-ball复制)
 ```
 
 ### CI 运行历史 (最近5次)
@@ -89,12 +89,11 @@ ls -la /home/pi/.openclaw/workspace/pi-pin-ball/screenshots/
 
 | 项目 | 状态 |
 |------|------|
-| 截图有效性 | ⚠️ 部分过期 |
+| 截图有效性 | ✅ 全部最新 |
 | CI 运行状态 | ✅ 正常 (所有最近5次运行成功) |
-| GitHub 同步 | ✅ 正常 |
-| 需要修复 | pinball_04_launch.png (过期5天) |
+| GitHub 同步 | ✅ 已推送 |
 
 **总结**: 
 - CI/CD 运行正常，所有最近5次运行均成功
-- pinball_04_launch.png 已过期5天，需要重新生成或从 pi-pin-ball 复制
-- 其他截图 (01, 02, 03) 均为最新状态
+- pinball_04_launch.png 已修复 (从 pi-pin-ball 复制最新版本)
+- 所有截图现均为最新状态
